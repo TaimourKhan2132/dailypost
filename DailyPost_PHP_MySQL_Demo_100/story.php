@@ -3,6 +3,11 @@ require 'config/db.php';
 
 dp_session_start();
 
+$categories = [];
+foreach ($pdo->query("SELECT * FROM categories ORDER BY sort_order") as $c) {
+    $categories[$c['slug']] = $c;
+}
+
 $id = (int) ($_GET['id'] ?? 0);
 
 $q = $pdo->prepare("SELECT * FROM stories WHERE id = ? AND status = 'published'");
@@ -11,76 +16,111 @@ $s = $q->fetch();
 
 if (!$s) {
     http_response_code(404);
-    exit('Story not found.');
+    $page_title = 'Story not found — DailyPost';
+    $active_nav = '';
+    require 'includes/header.php';
+    echo '<div class="wrap"><div class="article"><h1>Story not found</h1>'
+       . '<p class="lead">That story may have been removed, or the link is wrong.</p>'
+       . '<a class="btn" href="index.php">Back to DailyPost</a></div></div>';
+    require 'includes/footer.php';
+    exit;
 }
 
-// --- VIEW COUNTER -----------------------------------------------
-// The original added a view on every single page load, so hitting
-// refresh ten times counted ten reads. Now one visitor counts once
-// per story per browsing session.
+// One view per story per browsing session, not per page load.
 if (empty($_SESSION['viewed'][$id])) {
     $pdo->prepare("UPDATE stories SET views = views + 1 WHERE id = ?")->execute([$id]);
     $_SESSION['viewed'][$id] = true;
     $s['views']++;
 }
 
-$excerpt = $s['excerpt'] ?: mb_substr($s['body'], 0, 160);
-?><!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= e($s['title']) ?> — DailyPost</title>
+$cat   = $categories[$s['category']] ?? $categories['general'];
+$image = story_image($s, $categories);
 
-<!-- Description and the og: tags below are what WhatsApp, Facebook
-     and X read when someone shares the link. Without them a shared
-     story shows up as a bare URL with no title or picture. -->
-<meta name="description" content="<?= e($excerpt) ?>">
-<meta property="og:type" content="article">
-<meta property="og:title" content="<?= e($s['title']) ?>">
-<meta property="og:description" content="<?= e($excerpt) ?>">
-<?php if (is_safe_image_url($s['image_url'])): ?>
-  <meta property="og:image" content="<?= e($s['image_url']) ?>">
-<?php endif; ?>
-<meta name="twitter:card" content="summary_large_image">
+// More from the same category, excluding this one.
+$rel = $pdo->prepare(
+    "SELECT * FROM stories
+     WHERE status = 'published' AND category = ? AND id <> ?
+     ORDER BY published_at DESC LIMIT 5"
+);
+$rel->execute([$s['category'], $id]);
+$related = $rel->fetchAll();
 
-<link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-<header>
-  <a class="brand" href="index.php">Daily<span>Post</span></a>
-  <nav><a href="index.php">Read</a><a href="write.php">Write</a></nav>
-</header>
+$page_title       = $s['title'] . ' — DailyPost';
+$meta_description = $s['excerpt'] ?: mb_strimwidth($s['body'], 0, 160, '…');
+$og_image         = $image;
+$active_nav       = 'read';
 
-<main>
-<article class="article">
-  <?php if (is_safe_image_url($s['image_url'])): ?>
-    <img src="<?= e($s['image_url']) ?>" alt=""
-         style="width:100%;max-height:420px;object-fit:cover"
-         onerror="this.remove()">
-  <?php else: ?>
-    <div class="art <?= e($s['color']) ?> big"><?= e(mb_strtoupper(mb_substr($s['title'], 0, 1))) ?></div>
+require 'includes/header.php';
+?>
+
+<div class="wrap">
+  <article class="article">
+
+    <?php if ($image): ?>
+      <div class="cover">
+        <img src="<?= e($image) ?>" alt=""
+             onerror="this.src='<?= e($cat['default_image']) ?>'">
+      </div>
+    <?php endif; ?>
+
+    <span class="badge" style="position:static;display:inline-block;background:<?= e($cat['badge_color']) ?>">
+      <?= e($cat['name']) ?>
+    </span>
+
+    <h1><?= e($s['title']) ?></h1>
+
+    <?php if ($s['excerpt']): ?>
+      <p class="lead"><?= e($s['excerpt']) ?></p>
+    <?php endif; ?>
+
+    <div class="byline">
+      <span>By <strong style="color:var(--text)"><?= e($s['author']) ?></strong></span>
+      <span><?= $s['published_at'] ? date('F j, Y', strtotime($s['published_at'])) : '' ?></span>
+      <span><?= read_time($s['body']) ?> min read</span>
+      <span><?= number_format((int) $s['views']) ?> views</span>
+    </div>
+
+    <?php
+    // Escape first, then turn blank lines into paragraphs. Doing it
+    // in this order means any HTML the writer typed stays inert text
+    // rather than becoming markup.
+    $paras = preg_split('/\n\s*\n/', trim($s['body']));
+    ?>
+    <div class="content">
+      <?php foreach ($paras as $p): ?>
+        <p><?= nl2br(e(trim($p))) ?></p>
+      <?php endforeach; ?>
+    </div>
+
+    <a class="btn ghost" href="index.php">← Back to DailyPost</a>
+  </article>
+
+  <?php if ($related): ?>
+    <section style="max-width:1180px;margin:0 auto">
+      <div class="sec-head">
+        <h2><span class="dot"></span> More in <?= e($cat['name']) ?></h2>
+      </div>
+      <div class="card-row">
+        <?php foreach ($related as $r):
+          $rc = $categories[$r['category']] ?? $categories['general']; ?>
+          <a class="card" href="story.php?id=<?= (int) $r['id'] ?>">
+            <div class="pic">
+              <span class="badge" style="background:<?= e($rc['badge_color']) ?>"><?= e($rc['name']) ?></span>
+              <img src="<?= e(story_image($r, $categories)) ?>" alt="" loading="lazy"
+                   onerror="this.src='<?= e($rc['default_image']) ?>'">
+            </div>
+            <div class="body">
+              <h3><?= e(mb_strimwidth($r['title'], 0, 64, '…')) ?></h3>
+              <div class="meta"><div class="line">
+                <span><?= e($r['author']) ?></span>
+                <span><?= read_time($r['body']) ?> min read</span>
+              </div></div>
+            </div>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </section>
   <?php endif; ?>
+</div>
 
-  <small>
-    BY <?= e(mb_strtoupper($s['author'])) ?>
-    · <?= $s['published_at'] ? date('M j, Y', strtotime($s['published_at'])) : '' ?>
-    · <?= read_time($s['body']) ?> MIN READ
-  </small>
-
-  <h1><?= e($s['title']) ?></h1>
-
-  <?php if ($s['excerpt']): ?>
-    <p class="lead"><?= e($s['excerpt']) ?></p>
-  <?php endif; ?>
-
-  <!-- htmlspecialchars first, then nl2br. Doing it in this order
-       means the writer's line breaks become <br> tags, but any HTML
-       they typed stays inert text. -->
-  <div class="body"><?= nl2br(e($s['body'])) ?></div>
-
-  <a href="index.php">← Back to DailyPost</a>
-</article>
-</main>
-</body>
-</html>
+<?php require 'includes/footer.php'; ?>

@@ -101,8 +101,14 @@ foreach ($pdo->query("SELECT status, COUNT(*) n FROM stories GROUP BY status") a
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Admin — DailyPost</title>
-<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="../assets/css/dailypost.css">
 <style>
+body{background:var(--bg)}
+.adminbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:64px;display:flex;align-items:center;gap:16px}
+.adminbar .name{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.adminbar .name span{color:var(--accent)}
+.adminbar .who{margin-left:auto;font-size:14px;color:var(--text-muted)}
+main.wrap{padding-top:24px}
 .tabs{display:flex;gap:10px;margin:20px 0;flex-wrap:wrap}
 .tabs a{padding:8px 14px;border:1px solid #ddd;border-radius:20px;text-decoration:none;color:#333;font-size:14px}
 .tabs a.on{background:#171717;color:#fff;border-color:#171717}
@@ -124,17 +130,17 @@ foreach ($pdo->query("SELECT status, COUNT(*) n FROM stories GROUP BY status") a
 </style>
 </head>
 <body>
-<header>
-  <a class="brand" href="../index.php">Daily<span>Post</span></a>
-  <nav>
-    <span style="color:#666;font-size:14px">Signed in as <?= e($_SESSION['admin']) ?></span>
-    <a href="logout.php">Logout</a>
-  </nav>
+<header class="adminbar">
+  <a class="name" href="../index.php">Daily<span>Post</span></a>
+  <span style="color:var(--text-muted);font-size:14px">Admin</span>
+  <span class="who">Signed in as <b style="color:var(--text)"><?= e($_SESSION['admin']) ?></b></span>
+  <a class="btn ghost" href="../index.php">View site</a>
+  <a class="btn ghost" href="logout.php">Logout</a>
 </header>
 
-<main>
-<section class="section">
-  <h1>Submissions</h1>
+<main class="wrap">
+<section>
+  <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Submissions</h1>
 
   <div class="tabs">
     <?php foreach (['pending' => 'Pending', 'published' => 'Published', 'rejected' => 'Rejected', 'all' => 'All'] as $key => $label): ?>
