@@ -1,0 +1,1 @@
+<?php require 'config/db.php';if($_SERVER['REQUEST_METHOD']==='POST'&&filter_var($_POST['email']??'',FILTER_VALIDATE_EMAIL)){$q=$pdo->prepare("INSERT IGNORE INTO subscribers(email) VALUES(?)");$q->execute([trim($_POST['email'])]);}header('Location: index.php#newsletter');

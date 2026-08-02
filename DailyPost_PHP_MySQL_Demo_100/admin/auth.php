@@ -1,0 +1,1 @@
+<?php session_start();require '../config/db.php';$q=$pdo->prepare("SELECT * FROM admins WHERE username=? LIMIT 1");$q->execute([$_POST['username']??'']);$a=$q->fetch();if($a&&password_verify($_POST['password']??'',$a['password_hash'])){$_SESSION['admin']=$a['username'];header('Location: dashboard.php');exit;}header('Location: login.php?error=1');

@@ -1,0 +1,5 @@
+CREATE TABLE admins(id INT AUTO_INCREMENT PRIMARY KEY,username VARCHAR(80) NOT NULL UNIQUE,password_hash VARCHAR(255) NOT NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE stories(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(180) NOT NULL,author VARCHAR(80) NOT NULL,email VARCHAR(180),excerpt VARCHAR(300),body TEXT NOT NULL,color VARCHAR(20) NOT NULL DEFAULT 'coral',status ENUM('pending','published','rejected') NOT NULL DEFAULT 'pending',created_at DATETIME NOT NULL,published_at DATETIME,views INT NOT NULL DEFAULT 0,INDEX(status,published_at));
+CREATE TABLE subscribers(id INT AUTO_INCREMENT PRIMARY KEY,email VARCHAR(180) NOT NULL UNIQUE,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+-- Generate an admin password hash with PHP: password_hash('YOUR_PASSWORD', PASSWORD_DEFAULT)
+-- Then: INSERT INTO admins(username,password_hash) VALUES('admin','PASTE_HASH_HERE');
