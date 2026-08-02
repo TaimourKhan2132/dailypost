@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DailyPost — Stories worth sharing.</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+</head><body>
+<header class="site-header"><a class="brand" href="#top">Daily<span>Post</span></a><p class="tagline">Stories worth sharing.</p>
+<nav><a href="#read">Read</a><a href="#write">Write</a><button id="searchOpen" class="icon-btn">⌕</button></nav></header>
+<div class="ticker"><b>DAILYPOST</b><span>Ideas, stories and voices from people everywhere.</span></div>
+<main id="top">
+<section class="welcome"><div><p class="eyebrow">TODAY</p><h1>A simple place<br>for good stories.</h1><p class="intro">Read what people are sharing. Write something worth remembering. No complicated menus.</p><a class="button dark" href="#write">Write a story →</a></div><div class="color-poster"><span>READ.</span><span>WRITE.</span><span>SHARE.</span></div></section>
+<section id="read" class="section"><div class="section-head"><h2>Featured</h2><span>Stories worth your time</span></div><article class="featured-card"><div class="featured-copy"><span class="pill">FEATURED</span><h2>Welcome to DailyPost</h2><p>A colorful, simple publication where anyone can share a story and everyone can read.</p><small>DailyPost Editorial · 2 min read</small></div><div class="feature-art">DP</div></article></section>
+<section class="section"><div class="section-head"><h2>Latest Stories</h2><span id="storyCount">0 stories</span></div><div id="stories" class="story-grid"></div></section>
+<section class="split"><div class="panel purple"><p class="eyebrow">MOST READ</p><h2 id="mostReadTitle">Your next favorite story is waiting.</h2><p>Readers decide what rises to the top.</p></div><div class="panel yellow"><p class="eyebrow">EDITOR'S PICKS</p><h2>Small stories. Big ideas.</h2><p>Selected stories can be highlighted here.</p></div></section>
+<section class="section digest"><div><p class="eyebrow">DAILY DIGEST</p><h2>The best of DailyPost, in one read.</h2><p>A simple daily collection of stories, ready whenever you are.</p></div><a class="button dark" href="#newsletter">Get the digest →</a></section>
+<section id="write" class="write-section"><div class="write-intro"><p class="eyebrow">YOUR TURN</p><h2>Write something worth sharing.</h2><p>Write once, submit once. Published stories are permanent in this simple version.</p></div>
+<form id="storyForm" class="story-form"><label>Title<input id="title" maxlength="120" required placeholder="Give your story a title"></label><label>Your name<input id="author" maxlength="60" required placeholder="Your name"></label><label>Your story<textarea id="body" maxlength="12000" required placeholder="Start writing..."></textarea></label><label>Cover color<select id="color"><option value="coral">Coral</option><option value="blue">Blue</option><option value="green">Green</option><option value="purple">Purple</option><option value="yellow">Yellow</option></select></label><button class="button dark" type="submit">Publish story →</button><p class="form-note">Demo mode: stories are saved in this browser. A server/database is required for public multi-user publishing.</p></form></section>
+<section id="newsletter" class="newsletter"><p class="eyebrow">NEWSLETTER</p><h2>One good email. Every day.</h2><form id="newsletterForm"><input type="email" required placeholder="you@example.com"><button class="button light">Subscribe</button></form></section>
+</main>
+<footer><div><strong>DailyPost</strong><p>Stories worth sharing.</p></div><div class="footer-links"><a href="#read">Read</a><a href="#write">Write</a><a href="#newsletter">Newsletter</a><a href="#">Privacy</a></div><small>© 2026 DailyPost</small></footer>
+<div id="searchModal" class="modal" hidden><div class="search-box"><button id="searchClose" class="close">×</button><h2>Search DailyPost</h2><input id="searchInput" placeholder="Search stories..."><div id="searchResults"></div></div></div>
+<script src="assets/js/app.js"></script></body></html>
