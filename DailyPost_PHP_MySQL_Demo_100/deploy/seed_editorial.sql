@@ -7,11 +7,16 @@
 -- no invented authors here.
 --
 -- Import AFTER dailypost_production.sql.
+-- REPLACES whatever is currently in the stories table, so this is
+-- also how you undo seed_demo_100.sql.
 -- Delete any of these later from the admin panel once real stories
 -- come in.
 -- ===============================================================
 
 SET NAMES utf8mb4;
+
+DELETE FROM stories;
+ALTER TABLE stories AUTO_INCREMENT = 1;
 
 INSERT INTO stories
   (title, author, category, excerpt, body, color, image_url, status, created_at, published_at, views, featured, editors_pick)
