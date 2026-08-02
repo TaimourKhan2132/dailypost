@@ -3,6 +3,10 @@
 config/credentials.php
 **/config/credentials.php
 
+# Upload staging area - a build output, and it holds live
+# credentials once the password is filled in.
+_upload_to_infinityfree/
+
 # Local server noise
 *.log
 .DS_Store
