@@ -17,8 +17,21 @@ if (PHP_SAPI !== 'cli') {
     exit('This script can only be run from the command line.');
 }
 
-echo "Paste the password_hash value from the admins table:\n> ";
+echo "Paste the LONG hash string, the one starting with \$2y\$\n";
+echo "(from the password_hash column - NOT the username)\n> ";
 $hash = trim(fgets(STDIN));
+
+// Fail immediately and say what was actually wanted, rather than
+// solemnly measuring whatever got pasted in.
+if (!str_starts_with($hash, '$2y$')) {
+    echo "\nThat is not a hash.\n\n";
+    echo "You pasted: \"$hash\" (" . strlen($hash) . " characters)\n\n";
+    echo "A bcrypt hash is exactly 60 characters and starts with \$2y\$, like:\n";
+    echo "  \$2y\$10\$MV8mQfZCpqbWSyvgGYZQbel2soa8KrKDhyvx0vm9HLLvaemDeuhua\n\n";
+    echo "Get it from phpMyAdmin: open the admins table, click Edit on the\n";
+    echo "row, and copy the whole password_hash field.\n";
+    exit(1);
+}
 
 echo "\nType the password you are trying to log in with:\n> ";
 $password = trim(fgets(STDIN));
