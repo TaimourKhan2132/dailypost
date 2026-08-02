@@ -1,4 +1,4 @@
-﻿-- ===============================================================
+-- ===============================================================
 -- DailyPost - production database
 --
 -- Import this ONCE into the empty MySQL database created in your
