@@ -27,7 +27,7 @@ SET NAMES utf8mb4;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `admins` (
+CREATE TABLE IF NOT EXISTS `admins` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(80) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE `admins` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
   `slug` varchar(40) NOT NULL,
   `name` varchar(60) NOT NULL,
   `badge_color` varchar(20) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE `categories` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `login_attempts` (
+CREATE TABLE IF NOT EXISTS `login_attempts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip_hash` char(64) NOT NULL,
   `attempted_at` datetime NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE `login_attempts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `stories` (
+CREATE TABLE IF NOT EXISTS `stories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(180) NOT NULL,
   `author` varchar(80) NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE `stories` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `submission_log` (
+CREATE TABLE IF NOT EXISTS `submission_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip_hash` char(64) NOT NULL,
   `submitted_at` datetime NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE `submission_log` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `subscribers` (
+CREATE TABLE IF NOT EXISTS `subscribers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(180) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -131,7 +131,7 @@ CREATE TABLE `subscribers` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` (`slug`, `name`, `badge_color`, `default_image`, `sort_order`) VALUES ('business','Business','#7c3aed','https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=80&auto=format&fit=crop',3),('culture','Culture','#ea580c','https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&q=80&auto=format&fit=crop',4),('general','General','#6b7280','https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&q=80&auto=format&fit=crop',99),('health','Health','#0d9488','https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200&q=80&auto=format&fit=crop',10),('inspiration','Inspiration','#e11d48','https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80&auto=format&fit=crop',8),('lifestyle','Lifestyle','#db2777','https://images.unsplash.com/photo-1633945984522-a19268cc75ad?w=1200&q=80&auto=format&fit=crop',7),('pakistan','Pakistan','#16a34a','https://images.unsplash.com/photo-1758714144057-aae0194dfde5?w=1200&q=80&auto=format&fit=crop',2),('science','Science','#059669','https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80&auto=format&fit=crop',9),('sports','Sports','#0891b2','https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200&q=80&auto=format&fit=crop',5),('tech','Tech','#2563eb','https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80&auto=format&fit=crop',1),('travel','Travel','#dc2626','https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80&auto=format&fit=crop',6);
+INSERT INTO `categories` (`slug`, `name`, `badge_color`, `default_image`, `sort_order`) VALUES ('business','Business','#7c3aed','https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=80&auto=format&fit=crop',3),('culture','Culture','#ea580c','https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&q=80&auto=format&fit=crop',4),('general','General','#6b7280','https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&q=80&auto=format&fit=crop',99),('health','Health','#0d9488','https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200&q=80&auto=format&fit=crop',10),('inspiration','Inspiration','#e11d48','https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80&auto=format&fit=crop',8),('lifestyle','Lifestyle','#db2777','https://images.unsplash.com/photo-1633945984522-a19268cc75ad?w=1200&q=80&auto=format&fit=crop',7),('pakistan','Pakistan','#16a34a','https://images.unsplash.com/photo-1758714144057-aae0194dfde5?w=1200&q=80&auto=format&fit=crop',2),('science','Science','#059669','https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80&auto=format&fit=crop',9),('sports','Sports','#0891b2','https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200&q=80&auto=format&fit=crop',5),('tech','Tech','#2563eb','https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80&auto=format&fit=crop',1),('travel','Travel','#dc2626','https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80&auto=format&fit=crop',6) ON DUPLICATE KEY UPDATE name=VALUES(name), badge_color=VALUES(badge_color), default_image=VALUES(default_image), sort_order=VALUES(sort_order);
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
