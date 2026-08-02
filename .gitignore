@@ -1,0 +1,9 @@
+# Real credentials - never commit these.
+# Use config/credentials.example.php as the template instead.
+config/credentials.php
+**/config/credentials.php
+
+# Local server noise
+*.log
+.DS_Store
+Thumbs.db

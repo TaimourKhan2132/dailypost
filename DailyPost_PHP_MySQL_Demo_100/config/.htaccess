@@ -1,0 +1,15 @@
+# Nothing in this folder should ever be fetched over the web.
+# If PHP ever stops executing (a misconfigured server, a bad
+# upgrade), .php files get served as plain text - which would put
+# the database password on the open internet. This blocks that.
+
+# Apache 2.4
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+# Apache 2.2 (some free hosts still run it)
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

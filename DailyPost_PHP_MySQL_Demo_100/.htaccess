@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------
+# Site-wide rules.
+# ---------------------------------------------------------------
+
+# Block direct download of database dumps, migrations, logs and
+# notes. Without this, anyone could simply fetch
+#   yoursite.com/database_demo.sql
+# and walk away with the entire database.
+<FilesMatch "\.(sql|md|txt|log|ini|example\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Never list the contents of a folder that has no index file.
+Options -Indexes
+
+<IfModule mod_headers.c>
+    # Stop the browser guessing a file is a script when it isn't.
+    Header set X-Content-Type-Options "nosniff"
+
+    # Don't let another site load DailyPost inside a hidden frame
+    # and trick people into clicking things.
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Don't leak the full URL of a story to sites we link out to.
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

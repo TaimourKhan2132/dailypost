@@ -4,7 +4,14 @@ DROP TABLE IF EXISTS admins;
 CREATE TABLE admins(id INT AUTO_INCREMENT PRIMARY KEY,username VARCHAR(80) NOT NULL UNIQUE,password_hash VARCHAR(255) NOT NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE stories(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(180) NOT NULL,author VARCHAR(80) NOT NULL,email VARCHAR(180),excerpt VARCHAR(300),body TEXT NOT NULL,color VARCHAR(20) NOT NULL DEFAULT 'coral',status ENUM('pending','published','rejected') NOT NULL DEFAULT 'pending',created_at DATETIME NOT NULL,published_at DATETIME,views INT NOT NULL DEFAULT 0,INDEX(status,published_at));
 CREATE TABLE subscribers(id INT AUTO_INCREMENT PRIMARY KEY,email VARCHAR(180) NOT NULL UNIQUE,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-INSERT INTO admins(username,password_hash) VALUES ('admin','$2y$10$X9h8YQm7cYw3v4r7p6uJ5e3d2s1a0b9c8d7e6f5g4h3j2k1l0m9n8');
+-- NOTE: the hash originally shipped here was a fabricated string.
+-- It is bcrypt-shaped but hashes nothing, so password_verify() could
+-- never succeed and admin login was impossible. No admin row is
+-- created by this file any more - create one deliberately instead:
+--
+--   php tools/make_admin.php
+--
+-- and paste the statement it prints into your database.
 INSERT INTO stories(title,author,excerpt,body,color,status,created_at,published_at,views) VALUES ('A quiet morning can change the whole day — Note 01','Ayaan Malik','A few calm minutes can make a busy day feel more manageable.','A few calm minutes can make a busy day feel more manageable. This short demo story is included to test the DailyPost reading layout, article page, database connection, and publishing environment.','coral','published','2026-07-01 09:00:00','2026-07-01 10:00:00',0);
 INSERT INTO stories(title,author,excerpt,body,color,status,created_at,published_at,views) VALUES ('Small ideas can travel far — Note 02','Sara Khan','A simple thought, clearly shared, can start a conversation beyond its first reader.','A simple thought, clearly shared, can start a conversation beyond its first reader. This short demo story is included to test the DailyPost reading layout, article page, database connection, and publishing environment.','blue','published','2026-07-02 09:01:00','2026-07-02 10:01:00',17);
 INSERT INTO stories(title,author,excerpt,body,color,status,created_at,published_at,views) VALUES ('The value of learning something new — Note 03','Hamza Ahmed','Curiosity keeps ordinary days interesting and gives us another way to see the world.','Curiosity keeps ordinary days interesting and gives us another way to see the world. This short demo story is included to test the DailyPost reading layout, article page, database connection, and publishing environment.','green','published','2026-07-03 09:02:00','2026-07-03 10:02:00',34);
