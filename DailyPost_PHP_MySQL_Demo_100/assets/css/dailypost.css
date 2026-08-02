@@ -277,7 +277,9 @@ a   { color: inherit; text-decoration: none; }
 
 .hero-nav {
   position: absolute;
-  top: 50%;
+  /* Sits in the upper image area rather than dead centre, which
+     would collide with the category badge in the caption block. */
+  top: 38%;
   transform: translateY(-50%);
   width: 38px; height: 38px;
   border-radius: 50%;
