@@ -589,20 +589,70 @@ a   { color: inherit; text-decoration: none; }
 @media (max-width: 860px) {
   .wrap { padding: 0 16px; }
   .topbar .welcome, .site-header .logo .tag { display: none; }
-  .site-header .wrap { height: 64px; gap: 14px; }
-  .mainnav { gap: 18px; margin: 0; overflow-x: auto; }
-  .mainnav a span { display: none; }
-  .mainnav svg { width: 21px; height: 21px; }
+
+  /* On a phone the nav drops onto its own full-width row beneath
+     the logo. Squeezing it alongside the logo and the Sign In
+     button left no space for words, so Read and Write were showing
+     as bare icons - which tells a first-time visitor nothing. */
+  .site-header .wrap {
+    height: auto;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 11px;
+  }
+  .logo { flex: 1 1 auto; }
+  .logo .name { font-size: 25px; }
+  .header-actions { flex: 0 0 auto; }
+
+  .mainnav {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0;
+    gap: 0;
+    height: 46px;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+  }
+  .mainnav a {
+    flex: 1;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13.5px;
+    padding-top: 0;
+  }
+  .mainnav svg { width: 17px; height: 17px; }
+
   .home-top { grid-template-columns: 1fr; }
   .card-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .pick-row { grid-template-columns: 1fr; }
   .two-up { grid-template-columns: 1fr; }
   .site-footer .cols { grid-template-columns: 1fr 1fr; }
-  .hero .copy { padding: 20px; }
+
+  /* The desktop hero is a wide, shallow banner. At phone width the
+     same box is only ~230px tall, which is not enough for a
+     two-line headline plus the byline - the caption overflowed
+     upward and sat on top of the Featured Story flag. Taller box,
+     smaller headline. */
+  .hero { aspect-ratio: 4 / 3.9; }
+  .hero .copy { padding: 16px; }
+  .hero .copy h2 { font-size: 22px; margin: 10px 0 8px; }
   .hero .copy p { display: none; }
+  .hero .byline { gap: 10px 14px; font-size: 12.5px; }
+  .featured-flag { top: 12px; left: 12px; font-size: 11.5px; padding: 5px 10px; }
+  .hero-nav { width: 34px; height: 34px; top: 34%; }
 }
 
 @media (max-width: 520px) {
   .card-row { grid-template-columns: 1fr; }
   .site-footer .cols { grid-template-columns: 1fr; }
+}
+
+/* Small phones. The four labels still fit, but only just, so the
+   text and icons come down a little rather than wrapping. */
+@media (max-width: 400px) {
+  .mainnav a { font-size: 12.5px; gap: 4px; }
+  .mainnav svg { width: 15px; height: 15px; }
+  .logo .name { font-size: 22px; }
+  .btn { padding: 9px 15px; font-size: 13.5px; }
+  .topbar .wrap { font-size: 12px; }
 }
