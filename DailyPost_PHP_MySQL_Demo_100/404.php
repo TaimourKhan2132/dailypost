@@ -29,9 +29,9 @@ require __DIR__ . '/includes/header.php';
       everything else is still here.
     </p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <a class="btn" href="index.php">Back to the homepage</a>
-      <a class="btn ghost" href="search.php">Search stories</a>
-      <a class="btn ghost" href="write.php">Write a story</a>
+      <a class="btn" href="<?= e(base_path()) ?>index.php">Back to the homepage</a>
+      <a class="btn ghost" href="<?= e(base_path()) ?>search.php">Search stories</a>
+      <a class="btn ghost" href="<?= e(base_path()) ?>write.php">Write a story</a>
     </div>
   </div>
 

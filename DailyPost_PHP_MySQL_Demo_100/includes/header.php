@@ -24,10 +24,10 @@ $meta_description = $meta_description ?? 'A simple place for good stories. Read 
 <link rel="canonical" href="<?= e($canonical) ?>">
 <?php endif; ?>
 
-<link rel="icon" href="<?= $base ?? '' ?>assets/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="<?= $base ?? '' ?>assets/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="<?= $base ?? '' ?>assets/favicon-16.png">
-<link rel="apple-touch-icon" href="<?= $base ?? '' ?>assets/apple-touch-icon.png">
+<link rel="icon" href="<?= e(base_path()) ?>assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= e(base_path()) ?>assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="<?= e(base_path()) ?>assets/favicon-16.png">
+<link rel="apple-touch-icon" href="<?= e(base_path()) ?>assets/apple-touch-icon.png">
 <meta name="theme-color" content="#e11d48">
 
 <?php if (!empty($og_image)): ?>
@@ -44,7 +44,7 @@ $meta_description = $meta_description ?? 'A simple place for good stories. Read 
 $css_path = __DIR__ . '/../assets/css/dailypost.css';
 $css_v    = is_file($css_path) ? filemtime($css_path) : time();
 ?>
-<link rel="stylesheet" href="<?= $base ?? '' ?>assets/css/dailypost.css?v=<?= $css_v ?>">
+<link rel="stylesheet" href="<?= e(base_path()) ?>assets/css/dailypost.css?v=<?= $css_v ?>">
 
 <script>
 // Applied before the page paints, otherwise a dark-mode visitor
@@ -74,25 +74,25 @@ $css_v    = is_file($css_path) ? filemtime($css_path) : time();
 
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="<?= $base ?? '' ?>index.php">
+    <a class="logo" href="<?= e(base_path()) ?>index.php">
       <div class="name">Daily<span>Post</span></div>
       <div class="tag">Stories Worth Sharing</div>
     </a>
 
     <nav class="mainnav">
-      <a href="<?= $base ?? '' ?>index.php" class="<?= $active_nav === 'read' ? 'active' : '' ?>">
+      <a href="<?= e(base_path()) ?>index.php" class="<?= $active_nav === 'read' ? 'active' : '' ?>">
         <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
         <span>Read</span>
       </a>
-      <a href="<?= $base ?? '' ?>write.php" class="<?= $active_nav === 'write' ? 'active' : '' ?>">
+      <a href="<?= e(base_path()) ?>write.php" class="<?= $active_nav === 'write' ? 'active' : '' ?>">
         <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
         <span>Write</span>
       </a>
-      <a href="<?= $base ?? '' ?>search.php" class="<?= $active_nav === 'search' ? 'active' : '' ?>">
+      <a href="<?= e(base_path()) ?>search.php" class="<?= $active_nav === 'search' ? 'active' : '' ?>">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <span>Search</span>
       </a>
-      <a href="<?= $base ?? '' ?>about.php" class="<?= $active_nav === 'about' ? 'active' : '' ?>">
+      <a href="<?= e(base_path()) ?>about.php" class="<?= $active_nav === 'about' ? 'active' : '' ?>">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         <span>About</span>
       </a>
@@ -107,7 +107,7 @@ $css_v    = is_file($css_path) ? filemtime($css_path) : time();
             // the editor's door, so having it in the header invited
             // readers to try creating accounts that do not exist.
             // It now sits quietly in the footer instead. ?>
-      <a class="btn" href="<?= $base ?? '' ?>write.php">Write a story</a>
+      <a class="btn" href="<?= e(base_path()) ?>write.php">Write a story</a>
     </div>
   </div>
 </header>

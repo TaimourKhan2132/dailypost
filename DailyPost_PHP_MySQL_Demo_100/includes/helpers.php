@@ -205,33 +205,54 @@ function unique_slug(PDO $pdo, string $title, ?int $excludeId = null): string
     }
 }
 
-// Falls back to the old ?id= form for any story without a slug, so
-// nothing breaks before the backfill is run or after an import that
-// predates this.
-function story_url(array $story, string $base = ''): string
+// Path from the domain root to the site, always ending in a slash.
+// Live that is "/", locally it is "/dailypost/".
+//
+// Everything on a page must be linked through this. A pretty URL
+// like /story/some-slug is served by story.php, but the browser
+// still resolves relative links against /story/ - so "assets/..."
+// becomes "/story/assets/..." and every stylesheet, icon and menu
+// link breaks. SCRIPT_NAME is the real script, not the rewritten
+// address, so it gives the right answer either way.
+function base_path(): string
 {
-    if (!empty($story['slug'])) {
-        return $base . 'story/' . rawurlencode($story['slug']);
+    $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+
+    // Admin pages live one level down.
+    if (basename($dir) === 'admin') {
+        $dir = dirname($dir);
     }
 
-    return $base . 'story.php?id=' . (int) ($story['id'] ?? 0);
+    $dir = rtrim($dir, '/');
+
+    return $dir . '/';
 }
 
-// Absolute URL, needed for sitemaps and share links.
+// Where a story lives, relative to the site root and with no
+// leading slash. Falls back to the old ?id= form for any story
+// without a slug.
+function story_path(array $story): string
+{
+    if (!empty($story['slug'])) {
+        return 'story/' . rawurlencode($story['slug']);
+    }
+
+    return 'story.php?id=' . (int) ($story['id'] ?? 0);
+}
+
+// For href attributes.
+function story_url(array $story): string
+{
+    return base_path() . story_path($story);
+}
+
+// Absolute URL, needed for sitemaps, canonical tags and share links.
 function site_url(string $path = ''): string
 {
     $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
     $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-    // Works whether the site sits at the domain root or in a
-    // subfolder such as /dailypost/ during local development.
-    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-    if (basename($dir) === 'admin') {
-        $dir = dirname($dir);
-    }
-    $dir = rtrim($dir, '/');
-
-    return $scheme . '://' . $host . $dir . '/' . ltrim($path, '/');
+    return $scheme . '://' . $host . base_path() . ltrim($path, '/');
 }
 
 

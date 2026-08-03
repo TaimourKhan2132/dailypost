@@ -38,7 +38,7 @@ foreach ($pages as $p) {
 }
 
 foreach ($stories as $s) {
-    $loc = site_url(story_url($s));
+    $loc = site_url(story_path($s));
     echo "  <url>\n";
     echo "    <loc>" . htmlspecialchars($loc, ENT_XML1) . "</loc>\n";
     if ($s['published_at']) {

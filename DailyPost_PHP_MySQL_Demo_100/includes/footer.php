@@ -1,7 +1,7 @@
 <?php // Floating Write button. Phones only, and not on the write
       // page itself where it would just point at the current page. ?>
 <?php if (($active_nav ?? '') !== 'write'): ?>
-  <a class="fab" href="<?= $base ?? '' ?>write.php" aria-label="Write a story" title="Write a story">
+  <a class="fab" href="<?= e(base_path()) ?>write.php" aria-label="Write a story" title="Write a story">
     <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
   </a>
 <?php endif; ?>
@@ -17,15 +17,15 @@
       </div>
       <div>
         <h4>Explore</h4>
-        <a href="<?= $base ?? '' ?>index.php">Latest Stories</a>
-        <a href="<?= $base ?? '' ?>search.php">Search</a>
-        <a href="<?= $base ?? '' ?>index.php#picks">Editor's Picks</a>
+        <a href="<?= e(base_path()) ?>index.php">Latest Stories</a>
+        <a href="<?= e(base_path()) ?>search.php">Search</a>
+        <a href="<?= e(base_path()) ?>index.php#picks">Editor's Picks</a>
       </div>
       <div>
         <h4>Take Part</h4>
-        <a href="<?= $base ?? '' ?>write.php">Write a Story</a>
-        <a href="<?= $base ?? '' ?>index.php#newsletter">Newsletter</a>
-        <a href="<?= $base ?? '' ?>about.php">About</a>
+        <a href="<?= e(base_path()) ?>write.php">Write a Story</a>
+        <a href="<?= e(base_path()) ?>index.php#newsletter">Newsletter</a>
+        <a href="<?= e(base_path()) ?>about.php">About</a>
       </div>
       <div>
         <h4>Categories</h4>
@@ -33,7 +33,7 @@
         // Only shown if the page already loaded the category list.
         foreach (array_slice($categories ?? [], 0, 5) as $c):
         ?>
-          <a href="<?= $base ?? '' ?>search.php?category=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
+          <a href="<?= e(base_path()) ?>search.php?category=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
         <?php endforeach; ?>
       </div>
     </div>
@@ -44,7 +44,7 @@
       <?php // Editors only. Kept down here rather than in the header
             // so readers are not invited to create an account that
             // does not exist. ?>
-      <a class="editor-link" href="<?= $base ?? '' ?>admin/login.php">Editor sign in</a>
+      <a class="editor-link" href="<?= e(base_path()) ?>admin/login.php">Editor sign in</a>
     </div>
   </div>
 </footer>

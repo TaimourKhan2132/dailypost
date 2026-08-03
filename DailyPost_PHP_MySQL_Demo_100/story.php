@@ -34,7 +34,7 @@ if (!$s) {
     require 'includes/header.php';
     echo '<div class="wrap"><div class="article"><h1>Story not found</h1>'
        . '<p class="lead">That story may have been removed, or the link is wrong.</p>'
-       . '<a class="btn" href="index.php">Back to DailyPost</a></div></div>';
+       . '<a class="btn" href="' . e(base_path()) . 'index.php">Back to DailyPost</a></div></div>';
     require 'includes/footer.php';
     exit;
 }
@@ -66,7 +66,7 @@ $related = $rel->fetchAll();
 $page_title       = $s['title'] . ' — DailyPost';
 $meta_description = $s['excerpt'] ?: mb_strimwidth($s['body'], 0, 160, '…');
 $og_image         = $image;
-$canonical        = site_url(story_url($s));
+$canonical        = site_url(story_path($s));
 $active_nav       = 'read';
 
 require 'includes/header.php';
@@ -116,7 +116,7 @@ require 'includes/header.php';
     // travel here. The og: tags in the header are what make the
     // shared link show a picture and a headline rather than a bare
     // address.
-    $shareUrl  = site_url(story_url($s));
+    $shareUrl  = site_url(story_path($s));
     $shareText = $s['title'] . ' — DailyPost';
     ?>
     <div class="share">
@@ -146,7 +146,7 @@ require 'includes/header.php';
       </button>
     </div>
 
-    <a class="btn ghost" href="index.php">← Back to DailyPost</a>
+    <a class="btn ghost" href="<?= e(base_path()) ?>index.php">← Back to DailyPost</a>
   </article>
 
   <script>
