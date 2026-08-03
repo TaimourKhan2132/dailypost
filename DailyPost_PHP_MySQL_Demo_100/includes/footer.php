@@ -1,3 +1,12 @@
+<?php // Floating Write button. Phones only, and not on the write
+      // page itself where it would just point at the current page. ?>
+<?php if (($active_nav ?? '') !== 'write'): ?>
+  <a class="fab" href="<?= $base ?? '' ?>write.php" aria-label="Write a story">
+    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+    <span>Write</span>
+  </a>
+<?php endif; ?>
+
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
