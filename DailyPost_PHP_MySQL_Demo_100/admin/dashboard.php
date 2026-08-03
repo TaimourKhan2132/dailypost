@@ -52,7 +52,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'toggle_pick':
                 $pdo->prepare("UPDATE stories SET editors_pick = 1 - editors_pick WHERE id = ?")->execute([$id]);
                 break;
+
+            // --- READ COUNTS ------------------------------------
+            // Clamped at both ends: never negative, and capped so a
+            // slipped keypress cannot write a number the column
+            // cannot hold.
+            case 'set_views':
+                $n = max(0, min(100000000, (int) ($_POST['views'] ?? 0)));
+                $pdo->prepare("UPDATE stories SET views = ? WHERE id = ?")->execute([$n, $id]);
+                break;
+
+            case 'add_views':
+                $n = (int) ($_POST['amount'] ?? 0);
+                $n = max(-100000000, min(100000000, $n));
+                // GREATEST keeps it at zero rather than going
+                // negative when subtracting more than exists.
+                $pdo->prepare("UPDATE stories SET views = GREATEST(0, LEAST(100000000, views + ?)) WHERE id = ?")
+                    ->execute([$n, $id]);
+                break;
+
+            case 'reset_views':
+                $pdo->prepare("UPDATE stories SET views = 0 WHERE id = ?")->execute([$id]);
+                break;
         }
+    }
+
+    // Not tied to one story, so it sits outside the id check above.
+    if (($_POST['action'] ?? '') === 'reset_all_views') {
+        $pdo->exec("UPDATE stories SET views = 0");
     }
 
     // Redirect after POST so a refresh does not repeat the action.
@@ -127,6 +154,12 @@ main.wrap{padding-top:24px}
 .pager{display:flex;gap:8px;margin-top:24px;flex-wrap:wrap}
 .pager a,.pager span{padding:7px 12px;border:1px solid #ddd;border-radius:5px;text-decoration:none;color:#333;font-size:14px}
 .pager span.cur{background:#171717;color:#fff;border-color:#171717}
+.views-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:14px 0 18px;font-size:14px}
+.views-bar b{font-size:16px}
+.views-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.views-row form{display:flex;gap:6px;align-items:center}
+.views-label{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+.views-num{width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
 </style>
 </head>
 <body>
@@ -143,6 +176,18 @@ main.wrap{padding-top:24px}
 <main class="wrap">
 <section>
   <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Submissions</h1>
+
+  <?php
+  $totalViews = (int) $pdo->query("SELECT COALESCE(SUM(views),0) FROM stories")->fetchColumn();
+  ?>
+  <div class="views-bar">
+    <span><b><?= number_format($totalViews) ?></b> total reads across all stories</span>
+    <form method="post" onsubmit="return confirm('Set the read count of EVERY story back to zero? This cannot be undone.')">
+      <?= csrf_field() ?>
+      <input type="hidden" name="filter" value="<?= e($filter) ?>">
+      <button class="btn-sm danger" name="action" value="reset_all_views" type="submit">Reset all read counts</button>
+    </form>
+  </div>
 
   <div class="tabs">
     <?php foreach (['pending' => 'Pending', 'published' => 'Published', 'rejected' => 'Rejected', 'all' => 'All'] as $key => $label): ?>
@@ -231,6 +276,38 @@ main.wrap{padding-top:24px}
 
             <a class="btn-sm ghost" style="text-decoration:none"
                href="../story.php?id=<?= (int) $s['id'] ?>" target="_blank">View</a>
+          </div>
+
+          <div class="views-row">
+            <span class="views-label">Reads</span>
+
+            <form method="post">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+              <input type="hidden" name="filter" value="<?= e($filter) ?>">
+              <input type="hidden" name="action" value="set_views">
+              <input class="views-num" type="number" name="views" min="0" max="100000000"
+                     value="<?= (int) $s['views'] ?>" aria-label="Read count">
+              <button class="btn-sm" type="submit">Set</button>
+            </form>
+
+            <form method="post">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+              <input type="hidden" name="filter" value="<?= e($filter) ?>">
+              <input type="hidden" name="action" value="add_views">
+              <button class="btn-sm ghost" name="amount" value="1"   type="submit">+1</button>
+              <button class="btn-sm ghost" name="amount" value="10"  type="submit">+10</button>
+              <button class="btn-sm ghost" name="amount" value="100" type="submit">+100</button>
+              <button class="btn-sm ghost" name="amount" value="-10" type="submit">−10</button>
+            </form>
+
+            <form method="post" onsubmit="return confirm('Set this story\'s read count back to zero?')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+              <input type="hidden" name="filter" value="<?= e($filter) ?>">
+              <button class="btn-sm warn" name="action" value="reset_views" type="submit">Reset</button>
+            </form>
           </div>
         </div>
       </div>
