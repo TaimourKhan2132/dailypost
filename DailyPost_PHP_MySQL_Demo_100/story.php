@@ -3,10 +3,7 @@ require 'config/db.php';
 
 dp_session_start();
 
-$categories = [];
-foreach ($pdo->query("SELECT * FROM categories ORDER BY sort_order") as $c) {
-    $categories[$c['slug']] = $c;
-}
+$categories = load_categories($pdo);
 
 $id = (int) ($_GET['id'] ?? 0);
 

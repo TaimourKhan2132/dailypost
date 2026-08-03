@@ -195,14 +195,74 @@ function is_safe_image_url(?string $url): bool
     return in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['http', 'https'], true);
 }
 
-// Falls back to the category photo when a story has no usable
-// image. The browser-side onerror handler covers the other case -
-// a link that looked fine but is dead by the time someone reads it.
+// Loads every category with its badge colour and its set of
+// fallback photos. Every page needs this, so it lives here rather
+// than being copy-pasted five times.
+function load_categories(PDO $pdo): array
+{
+    $cats = [];
+
+    foreach ($pdo->query("SELECT * FROM categories ORDER BY sort_order") as $c) {
+        $c['images'] = [];
+        $cats[$c['slug']] = $c;
+    }
+
+    // Wrapped because the code may reach a server where migration
+    // 004 has not been imported yet. A missing table should mean
+    // one photo per category, not a broken site.
+    try {
+        foreach ($pdo->query("SELECT category, url FROM category_images ORDER BY id") as $r) {
+            if (isset($cats[$r['category']])) {
+                $cats[$r['category']]['images'][] = $r['url'];
+            }
+        }
+    } catch (PDOException $e) {
+        // no category_images table - fall through to default_image
+    }
+
+    foreach ($cats as $slug => $c) {
+        if (!$c['images'] && !empty($c['default_image'])) {
+            $cats[$slug]['images'][] = $c['default_image'];
+        }
+    }
+
+    return $cats;
+}
+
+// Falls back to a category photo when a story has no usable image.
+// The browser-side onerror handler covers the other case - a link
+// that looked fine but is dead by the time someone reads it.
 function story_image(array $story, array $categories): string
 {
     if (is_safe_image_url($story['image_url'] ?? null)) {
         return $story['image_url'];
     }
 
-    return $categories[$story['category']]['default_image'] ?? '';
+    $cat = $categories[$story['category']] ?? $categories['general'] ?? null;
+    if (!$cat) {
+        return '';
+    }
+
+    $images = $cat['images'] ?? [];
+    if (!$images) {
+        return $cat['default_image'] ?? '';
+    }
+
+    // Chosen from the story id rather than at random, so a story
+    // keeps the same picture on every page load and between the
+    // card, the article and Most Read. Random would make the site
+    // flicker on every refresh.
+    return $images[((int) ($story['id'] ?? 0)) % count($images)];
+}
+
+// The single photo used when a whole category needs one image
+// (the onerror fallback on an <img>, for instance).
+function category_image(array $categories, string $slug): string
+{
+    $cat = $categories[$slug] ?? $categories['general'] ?? null;
+    if (!$cat) {
+        return '';
+    }
+
+    return $cat['images'][0] ?? $cat['default_image'] ?? '';
 }

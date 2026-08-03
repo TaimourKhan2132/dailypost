@@ -7,10 +7,7 @@ $errors = $_SESSION['form_errors'] ?? [];
 $old    = $_SESSION['form_old']    ?? [];
 unset($_SESSION['form_errors'], $_SESSION['form_old']);
 
-$categories = [];
-foreach ($pdo->query("SELECT * FROM categories ORDER BY sort_order") as $c) {
-    $categories[$c['slug']] = $c;
-}
+$categories = load_categories($pdo);
 
 $v = fn(string $k): string => e($old[$k] ?? '');
 

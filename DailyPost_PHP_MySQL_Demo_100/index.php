@@ -6,10 +6,7 @@ dp_session_start();
 // --- CATEGORIES --------------------------------------------------
 // Keyed by slug so a story can look up its badge colour and its
 // fallback photo in one step.
-$categories = [];
-foreach ($pdo->query("SELECT * FROM categories ORDER BY sort_order") as $c) {
-    $categories[$c['slug']] = $c;
-}
+$categories = load_categories($pdo);
 
 // --- THE FOUR HOMEPAGE QUERIES -----------------------------------
 // Each one is small and indexed. This is why migration 001 added

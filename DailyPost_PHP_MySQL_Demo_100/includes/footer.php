@@ -1,9 +1,8 @@
 <?php // Floating Write button. Phones only, and not on the write
       // page itself where it would just point at the current page. ?>
 <?php if (($active_nav ?? '') !== 'write'): ?>
-  <a class="fab" href="<?= $base ?? '' ?>write.php" aria-label="Write a story">
+  <a class="fab" href="<?= $base ?? '' ?>write.php" aria-label="Write a story" title="Write a story">
     <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-    <span>Write</span>
   </a>
 <?php endif; ?>
 
@@ -42,6 +41,10 @@
     <div class="base">
       <span>© <?= date('Y') ?> DailyPost. All rights reserved.</span>
       <span>Stories Worth Sharing.</span>
+      <?php // Editors only. Kept down here rather than in the header
+            // so readers are not invited to create an account that
+            // does not exist. ?>
+      <a class="editor-link" href="<?= $base ?? '' ?>admin/login.php">Editor sign in</a>
     </div>
   </div>
 </footer>
