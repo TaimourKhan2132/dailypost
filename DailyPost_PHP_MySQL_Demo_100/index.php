@@ -78,7 +78,7 @@ require 'includes/header.php';
             <span class="badge" style="position:static;display:inline-block;background:<?= e($cat['badge_color']) ?>">
               <?= e($cat['name']) ?>
             </span>
-            <h2><a href="story.php?id=<?= (int) $s['id'] ?>"><?= e($s['title']) ?></a></h2>
+            <h2><a href="<?= e(story_url($s)) ?>"><?= e($s['title']) ?></a></h2>
             <p><?= e(mb_strimwidth($s['excerpt'] ?: $s['body'], 0, 150, '…')) ?></p>
             <div class="byline">
               <span class="who">
@@ -161,7 +161,7 @@ require 'includes/header.php';
               <span class="rank" style="background:<?= $rankColors[$i] ?? '#6b7280' ?>"><?= $i + 1 ?></span>
               <img class="thumb" src="<?= e(story_image($s, $categories)) ?>" alt=""
                    onerror="this.src='<?= e($cat['default_image']) ?>'">
-              <a class="txt" href="story.php?id=<?= (int) $s['id'] ?>">
+              <a class="txt" href="<?= e(story_url($s)) ?>">
                 <b><?= e(mb_strimwidth($s['title'], 0, 52, '…')) ?></b>
                 <small><?= $s['published_at'] ? date('M j, Y', strtotime($s['published_at'])) : '' ?></small>
               </a>
@@ -183,7 +183,7 @@ require 'includes/header.php';
     <div class="card-row">
       <?php foreach (array_slice($latest, 0, 10) as $s):
         $cat = $categories[$s['category']] ?? $categories['general']; ?>
-        <a class="card" href="story.php?id=<?= (int) $s['id'] ?>">
+        <a class="card" href="<?= e(story_url($s)) ?>">
           <div class="pic">
             <span class="badge" style="background:<?= e($cat['badge_color']) ?>"><?= e($cat['name']) ?></span>
             <img src="<?= e(story_image($s, $categories)) ?>" alt=""
@@ -223,7 +223,7 @@ require 'includes/header.php';
       <div class="pick-row">
         <?php foreach ($picks as $s):
           $cat = $categories[$s['category']] ?? $categories['general']; ?>
-          <a class="pick" href="story.php?id=<?= (int) $s['id'] ?>">
+          <a class="pick" href="<?= e(story_url($s)) ?>">
             <img src="<?= e(story_image($s, $categories)) ?>" alt=""
                  loading="lazy" onerror="this.src='<?= e($cat['default_image']) ?>'">
             <div class="shade"></div>

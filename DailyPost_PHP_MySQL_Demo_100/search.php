@@ -100,7 +100,7 @@ require 'includes/header.php';
     <div class="card-row">
       <?php foreach ($results as $s):
         $sc = $categories[$s['category']] ?? $categories['general']; ?>
-        <a class="card" href="story.php?id=<?= (int) $s['id'] ?>">
+        <a class="card" href="<?= e(story_url($s)) ?>">
           <div class="pic">
             <span class="badge" style="background:<?= e($sc['badge_color']) ?>"><?= e($sc['name']) ?></span>
             <img src="<?= e(story_image($s, $categories)) ?>" alt="" loading="lazy"

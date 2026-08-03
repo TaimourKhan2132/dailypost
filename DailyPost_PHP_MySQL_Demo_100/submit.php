@@ -114,11 +114,12 @@ if ($errors) {
 // status defaults to 'pending'. Nothing reaches the public site
 // until an admin approves it.
 $q = $pdo->prepare(
-    "INSERT INTO stories (title, author, email, excerpt, body, color, category, image_url, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())"
+    "INSERT INTO stories (title, slug, author, email, excerpt, body, color, category, image_url, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())"
 );
 $q->execute([
     $title,
+    unique_slug($pdo, $title),
     $author,
     $email !== '' ? $email : null,
     $excerpt !== '' ? $excerpt : null,

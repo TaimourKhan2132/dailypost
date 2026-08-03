@@ -167,6 +167,74 @@ function require_admin(): void
 }
 
 
+// --- URLS AND SLUGS ---------------------------------------------
+// "why-local-stories-matter" reads better than "?id=42", shares
+// better, and tells a search engine what the page is about.
+
+function make_slug(string $title): string
+{
+    $s = mb_strtolower(trim($title), 'UTF-8');
+
+    // \p{L}\p{N} rather than a-z0-9 so Urdu titles survive instead
+    // of collapsing to an empty string.
+    $s = preg_replace('/[^\p{L}\p{N}]+/u', '-', $s);
+    $s = preg_replace('/-+/', '-', $s);
+    $s = trim($s, '-');
+
+    return $s === '' ? 'story' : mb_substr($s, 0, 180);
+}
+
+// Adds -2, -3 and so on when a title is already taken. The demo
+// data has ten copies of each title, so this matters.
+function unique_slug(PDO $pdo, string $title, ?int $excludeId = null): string
+{
+    $base = make_slug($title);
+    $slug = $base;
+    $n    = 1;
+
+    while (true) {
+        $sql = "SELECT id FROM stories WHERE slug = ?" . ($excludeId ? " AND id <> ?" : "") . " LIMIT 1";
+        $q   = $pdo->prepare($sql);
+        $q->execute($excludeId ? [$slug, $excludeId] : [$slug]);
+
+        if (!$q->fetch()) {
+            return $slug;
+        }
+
+        $slug = $base . '-' . (++$n);
+    }
+}
+
+// Falls back to the old ?id= form for any story without a slug, so
+// nothing breaks before the backfill is run or after an import that
+// predates this.
+function story_url(array $story, string $base = ''): string
+{
+    if (!empty($story['slug'])) {
+        return $base . 'story/' . rawurlencode($story['slug']);
+    }
+
+    return $base . 'story.php?id=' . (int) ($story['id'] ?? 0);
+}
+
+// Absolute URL, needed for sitemaps and share links.
+function site_url(string $path = ''): string
+{
+    $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+    // Works whether the site sits at the domain root or in a
+    // subfolder such as /dailypost/ during local development.
+    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+    if (basename($dir) === 'admin') {
+        $dir = dirname($dir);
+    }
+    $dir = rtrim($dir, '/');
+
+    return $scheme . '://' . $host . $dir . '/' . ltrim($path, '/');
+}
+
+
 // --- READ TIME --------------------------------------------------
 // The screenshot shows "5 min read" on every card. Average adult
 // reading speed is roughly 200 words a minute.

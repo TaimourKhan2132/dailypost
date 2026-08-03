@@ -177,13 +177,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $ins = $pdo->prepare(
-                        "INSERT INTO stories (title, author, category, excerpt, body, image_url, status, created_at, published_at)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)"
+                        "INSERT INTO stories (title, slug, author, category, excerpt, body, image_url, status, created_at, published_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)"
                     );
                     $upd = $pdo->prepare(
                         "UPDATE stories SET title=?, author=?, category=?, excerpt=?, body=?, image_url=?, status=?, published_at=?
                          WHERE id=?"
                     );
+
+                    // Slugs are generated here rather than by the
+                    // database, and tracked in memory as we go so
+                    // that two rows with the same title inside one
+                    // file do not collide with each other.
+                    $usedSlugs = [];
+                    foreach ($pdo->query("SELECT slug FROM stories WHERE slug IS NOT NULL") as $row) {
+                        $usedSlugs[$row['slug']] = true;
+                    }
 
                     foreach ($rows as $r) {
                         // A published story with no date given gets
@@ -201,7 +210,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                            $r['body'], $r['image_url'], $r['status'], $pub, $r['id']]);
                             $updated++;
                         } else {
-                            $ins->execute([$r['title'], $r['author'], $r['category'], $r['excerpt'],
+                            $base = make_slug($r['title']);
+                            $slug = $base;
+                            $n    = 1;
+                            while (isset($usedSlugs[$slug])) {
+                                $slug = $base . '-' . (++$n);
+                            }
+                            $usedSlugs[$slug] = true;
+
+                            $ins->execute([$r['title'], $slug, $r['author'], $r['category'], $r['excerpt'],
                                            $r['body'], $r['image_url'], $r['status'], $pub]);
                             $added++;
                         }

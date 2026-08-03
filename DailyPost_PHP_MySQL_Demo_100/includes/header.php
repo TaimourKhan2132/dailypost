@@ -16,6 +16,20 @@ $meta_description = $meta_description ?? 'A simple place for good stories. Read 
 <meta property="og:title" content="<?= e($page_title) ?>">
 <meta property="og:description" content="<?= e($meta_description) ?>">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="DailyPost">
+
+<?php // Tells search engines which address is the real one when a
+      // page can be reached more than one way. ?>
+<?php if (!empty($canonical)): ?>
+<link rel="canonical" href="<?= e($canonical) ?>">
+<?php endif; ?>
+
+<link rel="icon" href="<?= $base ?? '' ?>assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= $base ?? '' ?>assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="<?= $base ?? '' ?>assets/favicon-16.png">
+<link rel="apple-touch-icon" href="<?= $base ?? '' ?>assets/apple-touch-icon.png">
+<meta name="theme-color" content="#e11d48">
+
 <?php if (!empty($og_image)): ?>
 <meta property="og:image" content="<?= e($og_image) ?>">
 <meta name="twitter:card" content="summary_large_image">
