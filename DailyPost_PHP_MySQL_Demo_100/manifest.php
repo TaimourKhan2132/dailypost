@@ -54,8 +54,19 @@ $manifest = [
         ],
         [
             // Android crops icons to whatever shape the launcher
-            // uses. A maskable icon has padding so the DP mark
-            // survives a circular crop.
+            // uses. A maskable icon is red to every edge with the
+            // mark inset, so it survives a circular crop.
+            //
+            // Both sizes are listed. With only a 512 present, some
+            // launchers fell back to the plain icon instead, and
+            // because that one had transparent corners Android put
+            // it on its own grey plate.
+            'src'     => $base . 'assets/icon-maskable-192.png',
+            'sizes'   => '192x192',
+            'type'    => 'image/png',
+            'purpose' => 'maskable',
+        ],
+        [
             'src'     => $base . 'assets/icon-maskable-512.png',
             'sizes'   => '512x512',
             'type'    => 'image/png',
