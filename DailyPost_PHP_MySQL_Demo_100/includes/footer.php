@@ -76,55 +76,93 @@
   var dismiss = document.getElementById('installDismiss');
   var deferred = null;
 
-  // Already installed and running from the home screen - nothing to offer.
+  // Already installed and running from the home screen.
   var standalone = window.matchMedia('(display-mode: standalone)').matches
                 || window.navigator.standalone === true;
 
-  function hidden() { return localStorage.getItem('dp-install-dismissed') === '1'; }
+  var ua      = navigator.userAgent;
+  var iOS     = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  var android = /android/i.test(ua);
 
-  function showBar() { if (!standalone && !hidden()) bar.hidden = false; }
+  // Dismissing used to be permanent, so closing the bar once meant it
+  // never came back on any device. It now goes quiet for two weeks.
+  var KEY = 'dp-install-snooze-until';
+  function snoozed() { return Date.now() < parseInt(localStorage.getItem(KEY) || '0', 10); }
+  function snooze(days) { localStorage.setItem(KEY, String(Date.now() + days * 86400000)); }
+  localStorage.removeItem('dp-install-dismissed');  // clear the old permanent flag
 
-  // Chrome and Edge fire this only when the site genuinely qualifies:
-  // served over HTTPS, has a manifest, and has a service worker.
+  // How to install by hand, per browser. Safari can install web apps
+  // but gives pages no way to trigger it, so on iOS this is the only
+  // honest answer rather than a button that silently does nothing.
+  function manualSteps() {
+    if (iOS)     return 'Tap the Share button at the bottom of Safari, then choose "Add to Home Screen".';
+    if (android) return 'Open the ⋮ menu at the top right, then tap "Install app" or "Add to Home screen".';
+    return 'Look for the install icon at the right of the address bar, or open the ⋮ menu and choose "Install DailyPost".';
+  }
+
+  function showBar(force) {
+    if (standalone) return;
+    if (!force && snoozed()) return;
+    bar.hidden = false;
+  }
+
+  // Chrome and Edge fire this only when the site genuinely qualifies,
+  // and only after you have actually used the site for a bit.
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     deferred = e;
-    if (link) link.hidden = false;
-    showBar();
+    btn.hidden = false;
+    hint.textContent = 'Add it to your home screen — no app store needed.';
+    showBar(false);
   });
 
-  function install() {
-    if (!deferred) return;
-    deferred.prompt();
-    deferred.userChoice.then(function () {
-      deferred = null;
-      bar.hidden = true;
-      if (link) link.hidden = true;
-    });
+  function install(e) {
+    if (e) e.preventDefault();
+
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () {
+        deferred = null;
+        bar.hidden = true;
+      });
+      return;
+    }
+
+    // No install event available - iOS always, and Chrome until it
+    // decides you have engaged enough. Show the instructions instead,
+    // ignoring any snooze, because this was an explicit request.
+    btn.hidden = true;
+    hint.textContent = manualSteps();
+    showBar(true);
+    bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   btn.addEventListener('click', install);
-  if (link) link.addEventListener('click', function (e) { e.preventDefault(); install(); });
+
+  // The footer link is always available and always does something.
+  // Previously it was hidden until an install event arrived, which on
+  // iPhone never happens - so it was either invisible or dead.
+  if (link) {
+    link.hidden = false;
+    link.addEventListener('click', install);
+  }
 
   dismiss.addEventListener('click', function () {
     bar.hidden = true;
-    localStorage.setItem('dp-install-dismissed', '1');
+    snooze(14);
   });
 
   window.addEventListener('appinstalled', function () {
     bar.hidden = true;
     if (link) link.hidden = true;
-    localStorage.setItem('dp-install-dismissed', '1');
+    snooze(3650);
   });
 
-  // iPhone and iPad: Safari supports installing but exposes no API
-  // for it, so the only honest thing is to say where the button is.
-  var iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  if (iOS && !standalone && !hidden()) {
+  // iPhone: offer the bar straight away, since no event is coming.
+  if (iOS && !standalone) {
     btn.hidden = true;
-    hint.textContent = 'Tap the Share button, then "Add to Home Screen".';
-    bar.hidden = false;
-    if (link) link.hidden = false;
+    hint.textContent = manualSteps();
+    showBar(false);
   }
 })();
 
