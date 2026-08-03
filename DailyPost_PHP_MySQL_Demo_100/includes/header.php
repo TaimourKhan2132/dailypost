@@ -24,6 +24,10 @@ $meta_description = $meta_description ?? 'A simple place for good stories. Read 
 <link rel="canonical" href="<?= e($canonical) ?>">
 <?php endif; ?>
 
+<?php // Makes the site installable. Served from manifest.php so the
+      // paths inside stay correct on any domain. ?>
+<link rel="manifest" href="<?= e(base_path()) ?>manifest.json">
+
 <link rel="icon" href="<?= e(base_path()) ?>assets/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="<?= e(base_path()) ?>assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="<?= e(base_path()) ?>assets/favicon-16.png">

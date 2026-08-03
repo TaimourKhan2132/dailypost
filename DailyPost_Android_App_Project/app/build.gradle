@@ -1,0 +1,30 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "pk.dailypost.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "pk.dailypost.app"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // core-ktx was here but this project has no Kotlin, so it only
+    // pulled in the Kotlin standard library for nothing.
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+}

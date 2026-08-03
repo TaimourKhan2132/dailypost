@@ -26,6 +26,10 @@
         <a href="<?= e(base_path()) ?>write.php">Write a Story</a>
         <a href="<?= e(base_path()) ?>index.php#newsletter">Newsletter</a>
         <a href="<?= e(base_path()) ?>about.php">About</a>
+        <?php // Shown only once the browser confirms the site can
+              // actually be installed. Offering it otherwise would
+              // be a button that does nothing. ?>
+        <a href="#" id="installLink" hidden>Install app</a>
       </div>
       <div>
         <h4>Categories</h4>
@@ -49,7 +53,92 @@
   </div>
 </footer>
 
+<?php // --- INSTALL PROMPT --------------------------------------
+      // Hidden until the browser says the site is installable, or
+      // until we detect an iPhone, where Safari has no install API
+      // and the user has to be told where the button is. ?>
+<div class="install-bar" id="installBar" hidden>
+  <img src="<?= e(base_path()) ?>assets/icon-192.png" alt="">
+  <div class="install-text">
+    <b>Install DailyPost</b>
+    <span id="installHint">Add it to your home screen — no app store needed.</span>
+  </div>
+  <button class="btn" id="installBtn" type="button">Install</button>
+  <button class="install-close" id="installDismiss" type="button" aria-label="Not now">&times;</button>
+</div>
+
 <script>
+(function () {
+  var bar     = document.getElementById('installBar');
+  var btn     = document.getElementById('installBtn');
+  var link    = document.getElementById('installLink');
+  var hint    = document.getElementById('installHint');
+  var dismiss = document.getElementById('installDismiss');
+  var deferred = null;
+
+  // Already installed and running from the home screen - nothing to offer.
+  var standalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+
+  function hidden() { return localStorage.getItem('dp-install-dismissed') === '1'; }
+
+  function showBar() { if (!standalone && !hidden()) bar.hidden = false; }
+
+  // Chrome and Edge fire this only when the site genuinely qualifies:
+  // served over HTTPS, has a manifest, and has a service worker.
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    if (link) link.hidden = false;
+    showBar();
+  });
+
+  function install() {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function () {
+      deferred = null;
+      bar.hidden = true;
+      if (link) link.hidden = true;
+    });
+  }
+
+  btn.addEventListener('click', install);
+  if (link) link.addEventListener('click', function (e) { e.preventDefault(); install(); });
+
+  dismiss.addEventListener('click', function () {
+    bar.hidden = true;
+    localStorage.setItem('dp-install-dismissed', '1');
+  });
+
+  window.addEventListener('appinstalled', function () {
+    bar.hidden = true;
+    if (link) link.hidden = true;
+    localStorage.setItem('dp-install-dismissed', '1');
+  });
+
+  // iPhone and iPad: Safari supports installing but exposes no API
+  // for it, so the only honest thing is to say where the button is.
+  var iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (iOS && !standalone && !hidden()) {
+    btn.hidden = true;
+    hint.textContent = 'Tap the Share button, then "Add to Home Screen".';
+    bar.hidden = false;
+    if (link) link.hidden = false;
+  }
+})();
+
+// --- SERVICE WORKER -------------------------------------------
+// Gives the site an offline page and makes repeat visits faster.
+// Registration is deliberately after load so it never competes with
+// the page itself for bandwidth.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('<?= e(base_path()) ?>sw.js')
+      .catch(function (err) { console.log('Service worker not registered:', err); });
+  });
+}
+
 // Theme toggle. The initial value was already applied in <head>;
 // this only handles the click and remembers the choice.
 document.getElementById('themeToggle').addEventListener('click', function () {
