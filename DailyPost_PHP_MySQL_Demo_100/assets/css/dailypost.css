@@ -44,6 +44,12 @@
 
 * { box-sizing: border-box; }
 
+/* The browser's own rule for [hidden] is display:none, but it loses
+   to anything more specific - .site-footer a { display: block } was
+   enough to make a hidden link visible again. That is how the
+   "Install app" link ended up on screen doing nothing. */
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {

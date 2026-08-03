@@ -40,14 +40,37 @@ if (rate_limit_exceeded($pdo, 3, 60)) {
 }
 
 // --- COLLECT ----------------------------------------------------
-$title     = trim($_POST['title']     ?? '');
-$author    = trim($_POST['author']    ?? '');
-$email     = trim($_POST['email']     ?? '');
-$excerpt   = trim($_POST['excerpt']   ?? '');
-$body      = trim($_POST['body']      ?? '');
-$color     = $_POST['color']     ?? '';
-$category  = $_POST['category']  ?? '';
-$image_url = trim($_POST['image_url'] ?? '');
+$title    = trim($_POST['title'] ?? '');
+$body     = trim($_POST['body']  ?? '');
+$category = $_POST['category']   ?? '';
+
+// The form now asks for one thing: a name or an email address.
+//
+// If it is an email we keep it in the private email column and
+// publish only the part before the @, tidied up. Printing someone's
+// address as their byline would put it in front of every reader and
+// every spam crawler, which is not what they meant by typing it.
+$identity = trim($_POST['author'] ?? '');
+$email    = null;
+$author   = $identity;
+
+if ($identity !== '' && filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+    $email = $identity;
+
+    $name = substr($identity, 0, strpos($identity, '@'));
+    $name = trim(preg_replace('/[._\-]+/', ' ', $name));
+    $name = preg_replace('/\d+$/', '', $name);          // ali.raza92 -> ali raza
+    $name = trim($name);
+
+    $author = $name !== '' ? mb_convert_case($name, MB_CASE_TITLE, 'UTF-8') : 'Anonymous';
+}
+
+// These are no longer asked for on the form. The columns stay, so an
+// editor can still set a cover image when approving a story and an
+// imported spreadsheet can still carry a summary.
+$excerpt   = '';
+$color     = 'coral';
+$image_url = '';
 
 // --- VALIDATE ---------------------------------------------------
 // The maxlength attributes in write.php are a convenience for
@@ -61,20 +84,16 @@ if ($title === '') {
     $errors[] = 'Title must be 180 characters or fewer.';
 }
 
-if ($author === '') {
-    $errors[] = 'Please tell us your name.';
+if ($identity === '') {
+    $errors[] = 'Please tell us your name or email.';
+} elseif ($email !== null) {
+    // It parsed as an email, so only the address length matters -
+    // the published name was derived from it and is always short.
+    if (mb_strlen($email) > 180) {
+        $errors[] = 'That email address is too long.';
+    }
 } elseif (mb_strlen($author) > 80) {
     $errors[] = 'Name must be 80 characters or fewer.';
-}
-
-if ($email !== '') {
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 180) {
-        $errors[] = 'That email address does not look right.';
-    }
-}
-
-if (mb_strlen($excerpt) > 300) {
-    $errors[] = 'Excerpt must be 300 characters or fewer.';
 }
 
 if (mb_strlen($body) < 50) {
@@ -105,7 +124,15 @@ if ($image_url !== '' && !is_safe_image_url($image_url)) {
 // loses a story they just spent twenty minutes writing.
 if ($errors) {
     $_SESSION['form_errors'] = $errors;
-    $_SESSION['form_old']    = compact('title', 'author', 'email', 'excerpt', 'body', 'color', 'category', 'image_url');
+    // Give back exactly what was typed, not the name we derived from
+    // it - otherwise someone who entered an email sees it silently
+    // replaced by half of itself.
+    $_SESSION['form_old'] = [
+        'title'    => $title,
+        'author'   => $identity,
+        'body'     => $body,
+        'category' => $category,
+    ];
     header('Location: write.php');
     exit;
 }
@@ -121,7 +148,7 @@ $q->execute([
     $title,
     unique_slug($pdo, $title),
     $author,
-    $email !== '' ? $email : null,
+    $email,
     $excerpt !== '' ? $excerpt : null,
     $body,
     $color,

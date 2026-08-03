@@ -52,19 +52,11 @@ require 'includes/header.php';
 
     <div class="two-up">
       <div class="field">
-        <label for="author">Your name</label>
-        <input id="author" name="author" maxlength="80" required
+        <label for="author">Your name or Email</label>
+        <input id="author" name="author" maxlength="180" required
                placeholder="Your name" value="<?= $v('author') ?>">
+        <span class="hint">If you give an email it stays private — only the name part is shown.</span>
       </div>
-      <div class="field">
-        <label for="email">Email <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-        <input id="email" type="email" name="email" maxlength="180"
-               placeholder="you@example.com" value="<?= $v('email') ?>">
-        <span class="hint">Never published. Only so an editor can reach you.</span>
-      </div>
-    </div>
-
-    <div class="two-up">
       <div class="field">
         <label for="category">Category</label>
         <select id="category" name="category">
@@ -75,28 +67,6 @@ require 'includes/header.php';
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="field">
-        <label for="color">Cover colour</label>
-        <select id="color" name="color">
-          <?php foreach (['coral','blue','green','purple','yellow'] as $c): ?>
-            <option value="<?= $c ?>" <?= ($old['color'] ?? '') === $c ? 'selected' : '' ?>><?= ucfirst($c) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="image_url">Cover image link <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-      <input id="image_url" type="url" name="image_url" maxlength="500"
-             placeholder="https://example.com/photo.jpg" value="<?= $v('image_url') ?>">
-      <span class="hint">Paste a link to a photo. Leave it blank and we'll use a picture for your category.</span>
-    </div>
-
-    <div class="field">
-      <label for="excerpt">Short summary</label>
-      <textarea id="excerpt" name="excerpt" maxlength="300" rows="3" style="min-height:auto"
-                placeholder="One or two sentences describing your story"><?= $v('excerpt') ?></textarea>
-      <span class="hint">Shown on story cards and when the link is shared.</span>
     </div>
 
     <div class="field">
