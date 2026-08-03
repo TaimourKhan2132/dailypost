@@ -573,7 +573,21 @@ a   { color: inherit; text-decoration: none; }
    visible, so a floating button would just be clutter. On a phone
    the nav scrolls away, and this is the whole point of the site. */
 
+/* Sized outside the media query on purpose. An <svg> with no
+   width or height expands to fill its container, so if these rules
+   ever failed to apply the icon would render the size of the
+   screen. Belt and braces. */
 .fab { display: none; }
+.fab svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 @media (max-width: 860px) {
   .fab {
@@ -593,11 +607,6 @@ a   { color: inherit; text-decoration: none; }
     box-shadow: 0 6px 20px rgba(0,0,0,.3);
   }
   .fab:active { background: var(--accent-hover); }
-  .fab svg {
-    width: 18px; height: 18px;
-    fill: none; stroke: currentColor;
-    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-  }
   /* Leaves room so the button never sits on top of the last line
      of the footer. */
   body { padding-bottom: 76px; }

@@ -20,7 +20,17 @@ $meta_description = $meta_description ?? 'A simple place for good stories. Read 
 <meta property="og:image" content="<?= e($og_image) ?>">
 <meta name="twitter:card" content="summary_large_image">
 <?php endif; ?>
-<link rel="stylesheet" href="<?= $base ?? '' ?>assets/css/dailypost.css">
+<?php
+// The ?v= number is the stylesheet's last-modified time. Browsers
+// cache CSS hard, so without this a visitor keeps using the old
+// file after an update - and a half-updated page (new HTML, old
+// CSS) looks far more broken than either version alone. Change the
+// file and the number changes, so every browser fetches it once and
+// then caches the new one.
+$css_path = __DIR__ . '/../assets/css/dailypost.css';
+$css_v    = is_file($css_path) ? filemtime($css_path) : time();
+?>
+<link rel="stylesheet" href="<?= $base ?? '' ?>assets/css/dailypost.css?v=<?= $css_v ?>">
 
 <script>
 // Applied before the page paints, otherwise a dark-mode visitor
