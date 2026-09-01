@@ -11,3 +11,6 @@ _upload_to_infinityfree/
 *.log
 .DS_Store
 Thumbs.db
+
+# Copies of files pulled off the server during an incident.
+_rescue_*/
