@@ -12,6 +12,86 @@ require '../config/db.php';
 
 require_admin();
 
+// The videos table arrives with migration 006. Until that has been
+// imported this page has nothing to talk to, so say so plainly
+// rather than throwing a 500 that explains nothing.
+$tableReady = true;
+try {
+    $pdo->query("SELECT 1 FROM videos LIMIT 1");
+} catch (PDOException $e) {
+    $tableReady = false;
+}
+
+if (!$tableReady) {
+    $sql = <<<'SQL'
+CREATE TABLE IF NOT EXISTS videos (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  youtube_id  VARCHAR(20)  NOT NULL,
+  title       VARCHAR(200) DEFAULT NULL,
+  status      ENUM('published','hidden') NOT NULL DEFAULT 'published',
+  sort_order  INT          NOT NULL DEFAULT 0,
+  created_at  DATETIME     NOT NULL,
+  UNIQUE KEY uniq_youtube_id (youtube_id),
+  INDEX idx_live (status, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SQL;
+    ?><!doctype html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Set up videos — DailyPost Admin</title>
+    <link rel="stylesheet" href="../assets/css/dailypost.css">
+    <style>
+    body{background:var(--bg)}
+    pre{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:16px;overflow:auto;font-size:12.5px;line-height:1.55}
+    </style>
+    </head>
+    <body>
+    <main class="wrap" style="max-width:760px;padding:34px 24px">
+      <h1 style="font-size:26px;font-weight:800;letter-spacing:-.025em;margin:0 0 8px">One step left</h1>
+      <p style="color:var(--text-muted);margin:0 0 22px">
+        Videos need a new table in the database. It takes about thirty seconds and
+        nothing else on the site is affected.
+      </p>
+
+      <ol style="line-height:1.9;padding-left:20px">
+        <li>Open <b>phpMyAdmin</b> from your hosting control panel.</li>
+        <li>Select the database <b>on the left</b>, then click the <b>SQL</b> tab.</li>
+        <li>Paste everything below and press <b>Go</b>.</li>
+        <li>Come back to this page.</li>
+      </ol>
+
+      <pre id="sql"><?= e($sql) ?></pre>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn" type="button" id="copy">Copy the SQL</button>
+        <a class="btn ghost" href="videos.php">I have run it — reload</a>
+        <a class="btn ghost" href="dashboard.php">Back to submissions</a>
+      </div>
+
+      <script>
+      document.getElementById('copy').addEventListener('click', function () {
+        var t = document.getElementById('sql').textContent, b = this;
+        var ok = function () { b.textContent = 'Copied'; setTimeout(function(){ b.textContent = 'Copy the SQL'; }, 1800); };
+        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(ok); }
+        else {
+          var a = document.createElement('textarea');
+          a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+          document.body.appendChild(a); a.select();
+          try { document.execCommand('copy'); ok(); } catch (e) {}
+          document.body.removeChild(a);
+        }
+      });
+      </script>
+    </main>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 $report = null;
 $errors = [];
 
