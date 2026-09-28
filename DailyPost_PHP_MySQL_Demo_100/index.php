@@ -194,7 +194,7 @@ require 'includes/header.php';
 
     <?php // A sliding row rather than a static grid. The cards are
           // unchanged - only the container moves. ?>
-    <div class="slider" data-slider data-interval="8000">
+    <div class="slider" data-slider data-interval="3000">
       <div class="slider-viewport">
         <div class="slider-track">
           <?php foreach (array_slice($latest, 0, 10) as $s):
@@ -243,7 +243,7 @@ require 'includes/header.php';
         <span style="font-size:13.5px;color:var(--text-muted)"><?= count($videos) ?> video<?= count($videos) === 1 ? '' : 's' ?></span>
       </div>
 
-      <div class="slider" data-slider data-interval="9000">
+      <div class="slider" data-slider data-interval="3000">
         <div class="slider-viewport">
           <div class="slider-track">
             <?php foreach ($videos as $v): ?>
@@ -367,11 +367,19 @@ document.querySelectorAll('[data-slider]').forEach(function (slider) {
 
   function render() {
     at = Math.min(at, maxIndex());
-    // Offset from the item's own position, so the gap between cards
-    // never has to be recalculated here.
-    track.style.transform = 'translateX(' + (-items[at].offsetLeft) + 'px)';
 
     var hideNav = items.length <= perView();
+
+    // Everything already fits: centre the items and do not move the
+    // track at all. Shifting by offsetLeft here would push a centred
+    // row off to the left, because offsetLeft is no longer zero.
+    slider.classList.toggle('is-short', hideNav);
+    track.style.transform = hideNav
+      ? 'none'
+      // Offset from the item's own position, so the gap between cards
+      // never has to be recalculated here.
+      : 'translateX(' + (-items[at].offsetLeft) + 'px)';
+
     if (prev) prev.hidden = hideNav;
     if (next) next.hidden = hideNav;
 

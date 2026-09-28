@@ -952,3 +952,23 @@ a   { color: inherit; text-decoration: none; }
 /* Sections whose content is a slider need their own bottom space;
    the old .card-row supplied it and the slider does not. */
 #watch { padding-bottom: 38px; }
+
+
+/* --- WATCH ROW SIZING --------------------------------------------------
+   Video tiles show one fewer across than story cards. A thumbnail
+   carries more detail than a headline, and the play button needs to
+   be a comfortable target rather than a dot.
+
+   These selectors are more specific than the plain .slider rules
+   above, so every breakpoint has to be restated here - otherwise the
+   desktop value would win at all widths regardless of media query
+   order. */
+#watch .slider { --per: 4; }
+@media (max-width: 1180px) { #watch .slider { --per: 3; } }
+@media (max-width: 860px)  { #watch .slider { --per: 2; } }
+@media (max-width: 520px)  { #watch .slider { --per: 1; } }
+
+/* Fewer items than fit: centre them instead of leaving a stranded
+   gap to the right. The script adds this class and stops moving the
+   track when it applies. */
+.slider.is-short .slider-track { justify-content: center; }
