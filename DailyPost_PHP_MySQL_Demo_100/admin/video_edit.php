@@ -10,6 +10,16 @@ require_admin();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 
+// This page needs the columns from migration 007. videos.php shows
+// the setup instructions, so send anyone who arrives early there
+// rather than throwing.
+try {
+    $pdo->query("SELECT slug, description, views FROM videos LIMIT 1");
+} catch (PDOException $e) {
+    header('Location: videos.php');
+    exit;
+}
+
 $q = $pdo->prepare("SELECT * FROM videos WHERE id = ?");
 $q->execute([$id]);
 $v = $q->fetch();

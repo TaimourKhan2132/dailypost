@@ -31,9 +31,21 @@ try {
     $v = null;
 }
 
+// slug, description and views arrive with migration 007. Until that
+// is imported this page still has to work - it simply has no
+// address of its own, no write-up and no counter. Guarding the
+// table alone was not enough: the columns need checking too.
+$hasPageColumns = false;
+try {
+    $pdo->query("SELECT slug, description, views FROM videos LIMIT 1");
+    $hasPageColumns = true;
+} catch (PDOException $e) {
+    $hasPageColumns = false;
+}
+
 // Arrived by id but the video has a readable address: send the
 // visitor to the proper one, permanently.
-if ($v && $slug === '' && !empty($v['slug'])) {
+if ($v && $slug === '' && $hasPageColumns && !empty($v['slug'])) {
     header('Location: ' . video_url($v), true, 301);
     exit;
 }
@@ -51,14 +63,17 @@ if (!$v) {
 }
 
 // One view per video per browsing session, same rule as stories.
-$vid = (int) $v['id'];
-if (empty($_SESSION['viewed_video'][$vid])) {
+$vid   = (int) $v['id'];
+$views = (int) ($v['views'] ?? 0);
+
+if ($hasPageColumns && empty($_SESSION['viewed_video'][$vid])) {
     $pdo->prepare("UPDATE videos SET views = views + 1 WHERE id = ?")->execute([$vid]);
     $_SESSION['viewed_video'][$vid] = true;
-    $v['views']++;
+    $views++;
 }
 
-$title = $v['title'] ?: 'Watch on DailyPost';
+$title       = $v['title'] ?: 'Watch on DailyPost';
+$description = (string) ($v['description'] ?? '');
 
 $rel = $pdo->prepare(
     "SELECT * FROM videos WHERE status = 'published' AND id <> ? ORDER BY sort_order, id LIMIT 4"
@@ -67,11 +82,11 @@ $rel->execute([$vid]);
 $related = $rel->fetchAll();
 
 $page_title       = $title . ' — DailyPost';
-$meta_description = $v['description']
-    ? mb_strimwidth(trim(preg_replace('/\s+/', ' ', $v['description'])), 0, 160, '…')
+$meta_description = $description !== ''
+    ? mb_strimwidth(trim(preg_replace('/\s+/', ' ', $description)), 0, 160, '…')
     : 'Watch ' . $title . ' on DailyPost.';
 $og_image         = youtube_thumb($v['youtube_id']);
-$canonical        = site_url(video_path($v));
+$canonical        = $hasPageColumns ? site_url(video_path($v)) : null;
 $active_nav       = 'read';
 
 require 'includes/header.php';
@@ -92,17 +107,17 @@ require 'includes/header.php';
     <h1><?= e($title) ?></h1>
 
     <div class="byline">
-      <span><?= number_format((int) $v['views']) ?> view<?= (int) $v['views'] === 1 ? '' : 's' ?></span>
+      <span><?= number_format($views) ?> view<?= $views === 1 ? '' : 's' ?></span>
       <span><?= date('F j, Y', strtotime($v['created_at'])) ?></span>
       <span><a href="<?= e(youtube_watch($v['youtube_id'])) ?>" target="_blank" rel="noopener"
                style="color:var(--accent)">Watch on YouTube</a></span>
     </div>
 
-    <?php if (trim((string) $v['description']) !== ''): ?>
+    <?php if (trim($description) !== ''): ?>
       <?php
       // Escaped first, then blank lines become paragraphs - so any
       // HTML typed into the description stays inert text.
-      $paras = preg_split('/\n\s*\n/', trim($v['description']));
+      $paras = preg_split('/\n\s*\n/', trim($description));
       ?>
       <div class="content">
         <?php foreach ($paras as $p): ?>

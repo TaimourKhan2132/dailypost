@@ -15,15 +15,28 @@ require_admin();
 // The videos table arrives with migration 006. Until that has been
 // imported this page has nothing to talk to, so say so plainly
 // rather than throwing a 500 that explains nothing.
-$tableReady = true;
+$tableReady   = true;
+$columnsReady = true;
+
 try {
     $pdo->query("SELECT 1 FROM videos LIMIT 1");
 } catch (PDOException $e) {
     $tableReady = false;
 }
 
-if (!$tableReady) {
-    $sql = <<<'SQL'
+// The table alone is not enough - video pages need the columns that
+// migration 007 adds. Checking only the table is what let the live
+// site throw a 500 instead of explaining itself.
+if ($tableReady) {
+    try {
+        $pdo->query("SELECT slug, description, views FROM videos LIMIT 1");
+    } catch (PDOException $e) {
+        $columnsReady = false;
+    }
+}
+
+if (!$tableReady || !$columnsReady) {
+    $create = <<<'SQL'
 CREATE TABLE IF NOT EXISTS videos (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   youtube_id  VARCHAR(20)  NOT NULL,
@@ -35,6 +48,17 @@ CREATE TABLE IF NOT EXISTS videos (
   INDEX idx_live (status, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SQL;
+
+    $alter = <<<'SQL'
+ALTER TABLE videos
+  ADD COLUMN slug        VARCHAR(200) NULL AFTER youtube_id,
+  ADD COLUMN description TEXT         NULL AFTER title,
+  ADD COLUMN views       INT NOT NULL DEFAULT 0,
+  ADD UNIQUE KEY uniq_video_slug (slug);
+SQL;
+
+    // Only offer what is actually missing.
+    $sql = !$tableReady ? $create . "\n\n" . $alter : $alter;
     ?><!doctype html>
     <html lang="en">
     <head>
