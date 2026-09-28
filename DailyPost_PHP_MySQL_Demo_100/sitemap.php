@@ -49,4 +49,22 @@ foreach ($stories as $s) {
     echo "  </url>\n";
 }
 
+// Video pages, when the table exists.
+try {
+    $videos = $pdo->query(
+        "SELECT id, slug, created_at FROM videos WHERE status = 'published' ORDER BY sort_order, id LIMIT 1000"
+    )->fetchAll();
+
+    foreach ($videos as $v) {
+        echo "  <url>\n";
+        echo "    <loc>" . htmlspecialchars(site_url(video_path($v)), ENT_XML1) . "</loc>\n";
+        echo "    <lastmod>" . date('Y-m-d', strtotime($v['created_at'])) . "</lastmod>\n";
+        echo "    <changefreq>monthly</changefreq>\n";
+        echo "    <priority>0.7</priority>\n";
+        echo "  </url>\n";
+    }
+} catch (PDOException $e) {
+    // migration 006/007 not applied yet
+}
+
 echo '</urlset>' . "\n";

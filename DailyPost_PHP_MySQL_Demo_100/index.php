@@ -247,26 +247,26 @@ require 'includes/header.php';
         <div class="slider-viewport">
           <div class="slider-track">
             <?php foreach ($videos as $v): ?>
-              <article class="vcard" data-yt="<?= e($v['youtube_id']) ?>">
+              <?php // The tile is a link to the video's own page, where
+                    // the player sits above the write-up. ?>
+              <a class="vcard" href="<?= e(video_url($v)) ?>" data-yt="<?= e($v['youtube_id']) ?>">
                 <div class="vthumb">
-                  <?php // Only a picture until someone presses play.
-                        // The YouTube player is never loaded otherwise,
-                        // which is what keeps this free to host. ?>
+                  <?php // Just a picture. No YouTube code loads here
+                        // unless the silent preview runs. ?>
                   <img src="<?= e(youtube_thumb($v['youtube_id'])) ?>" alt="" loading="lazy"
                        data-fallback="<?= e(youtube_thumb($v['youtube_id'], 'hqdefault')) ?>"
                        onerror="this.onerror=null;this.src=this.dataset.fallback">
-                  <button class="vplay" type="button"
-                          aria-label="Play<?= $v['title'] ? ': ' . e($v['title']) : '' ?>">
-                    <svg viewBox="0 0 68 48" aria-hidden="true">
+                  <span class="vplay" aria-hidden="true">
+                    <svg viewBox="0 0 68 48">
                       <path class="bg" d="M66.5 7.7a8.6 8.6 0 0 0-6-6C55.2 0 34 0 34 0S12.8 0 7.5 1.6a8.6 8.6 0 0 0-6 6.1A90 90 0 0 0 0 24a90 90 0 0 0 1.5 16.3 8.6 8.6 0 0 0 6 6C12.8 48 34 48 34 48s21.2 0 26.5-1.6a8.6 8.6 0 0 0 6-6.1A90 90 0 0 0 68 24a90 90 0 0 0-1.5-16.3z"/>
                       <path d="M45 24 27 14v20z" fill="#fff"/>
                     </svg>
-                  </button>
+                  </span>
                 </div>
                 <div class="vmeta">
                   <h3><?= e($v['title'] ?: 'Watch on DailyPost') ?></h3>
                 </div>
-              </article>
+              </a>
             <?php endforeach; ?>
           </div>
         </div>
@@ -442,6 +442,17 @@ document.querySelectorAll('[data-slider]').forEach(function (slider) {
   slider.addEventListener('dp:playing', stop);
 
   window.addEventListener('resize', render);
+
+  // A small handle so the preview code below can hold the row still
+  // while a clip is running, then move it on itself.
+  slider.dpSlider = {
+    pause: rest,
+    resume: play,
+    next: function () { go(at + 1); },
+    current: function () { return at; },
+    perView: perView
+  };
+
   render();
   play();
 });
@@ -461,34 +472,116 @@ document.querySelectorAll('.vthumb img[data-fallback]').forEach(function (img) {
   if (img.complete) { check(); } else { img.addEventListener('load', check); }
 });
 
-// --- CLICK TO PLAY ----------------------------------------------
-// The iframe is created only on a click. Until then the page holds
-// nothing but an image, so no YouTube code runs and no cookies are
-// set for visitors who never press play.
-document.querySelectorAll('.vcard').forEach(function (card) {
-  var btn = card.querySelector('.vplay');
-  if (!btn) return;
+// --- SILENT PREVIEW ---------------------------------------------
+// Each video in the Watch row plays its first three seconds, muted,
+// as it comes into view. The tile itself is a link: clicking it
+// opens the video's own page, where it plays properly with sound.
+//
+// Loading a YouTube player is not free - roughly a megabyte of
+// player code and video for every preview - so this is deliberately
+// bounded:
+//   * one pass only. Each video previews once, then the row goes
+//     back to sliding quietly. It does not loop forever burning
+//     data while nobody is watching.
+//   * not on phones, where that data costs the reader most.
+//   * not at all if the browser reports Save Data, or if the
+//     visitor has asked their system to reduce motion.
+// Every one of those limits is a single line to change.
+(function () {
+  var section = document.getElementById('watch');
+  if (!section) return;
 
-  btn.addEventListener('click', function () {
+  var slider = section.querySelector('[data-slider]');
+  if (!slider || !slider.dpSlider) return;
+
+  var cards = Array.prototype.slice.call(slider.querySelectorAll('.vcard'));
+  if (!cards.length) return;
+
+  var conn = navigator.connection || navigator.webkitConnection;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (conn && conn.saveData) return;
+  if (window.matchMedia('(max-width: 860px)').matches) return;
+
+  var api        = slider.dpSlider;
+  var PREVIEW_MS = 3000;
+  var seen       = {};
+  var current    = null;
+  var timer      = null;
+
+  function stopPreview() {
+    if (!current) return;
+    var card = current;
+    current = null;
+    card.classList.remove('previewing');
+    var frame = card.querySelector('.vthumb iframe');
+    if (frame) frame.parentNode.removeChild(frame);
+  }
+
+  function preview(card, index) {
+    stopPreview();
+
     var id = card.dataset.yt;
-    if (!id) return;
+    if (!id) return false;
 
-    var frame = document.createElement('iframe');
-    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id)
-              + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
-    frame.title = card.querySelector('h3') ? card.querySelector('h3').textContent : 'Video';
-    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-    frame.setAttribute('allowfullscreen', '');
-    frame.setAttribute('frameborder', '0');
+    current = card;
+    seen[index] = true;
+    card.classList.add('previewing');
 
-    var holder = card.querySelector('.vthumb');
-    holder.innerHTML = '';
-    holder.appendChild(frame);
-    card.classList.add('playing');
+    var f = document.createElement('iframe');
+    // Muted, no controls, not focusable - it is decoration, and the
+    // CSS makes it ignore clicks so the tile stays a link.
+    f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id)
+          + '?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0';
+    f.allow = 'autoplay; encrypted-media';
+    f.setAttribute('frameborder', '0');
+    f.setAttribute('tabindex', '-1');
+    f.setAttribute('aria-hidden', 'true');
+    card.querySelector('.vthumb').appendChild(f);
 
-    card.dispatchEvent(new CustomEvent('dp:playing', { bubbles: true }));
+    // Hold the row still for the length of the clip, then move on.
+    api.pause();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      stopPreview();
+      api.next();
+      step();
+    }, PREVIEW_MS);
+
+    return true;
+  }
+
+  function step() {
+    var i = api.current();
+
+    // Everything has had its turn: stop and let the row slide on
+    // its own from here.
+    if (seen[i] || !cards[i]) {
+      stopPreview();
+      api.resume();
+      return;
+    }
+
+    preview(cards[i], i);
+  }
+
+  // Give the thumbnails a moment to paint first.
+  var begin = setTimeout(step, 700);
+
+  // Hovering means someone is choosing - stop interrupting them.
+  slider.addEventListener('mouseenter', function () {
+    clearTimeout(begin);
+    clearTimeout(timer);
+    stopPreview();
   });
-});
+
+  // Leaving the tab should not leave a player running.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      clearTimeout(timer);
+      stopPreview();
+    }
+  });
+})();
 </script>
 
 <?php require 'includes/footer.php'; ?>

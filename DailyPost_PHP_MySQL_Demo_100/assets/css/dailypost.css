@@ -972,3 +972,26 @@ a   { color: inherit; text-decoration: none; }
    gap to the right. The script adds this class and stops moving the
    track when it applies. */
 .slider.is-short .slider-track { justify-content: center; }
+
+
+/* --- VIDEO PAGE --------------------------------------------------------
+   The player sits where a story's cover image would, so the page
+   reads the same way: media on top, words underneath. */
+.video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+.video-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* A muted preview should not look like a broken player. */
+.vcard.previewing .vplay { opacity: 0; }
+.vcard .vplay { transition: opacity .2s; }
+
+/* The preview iframe is decoration. Clicks must pass through it to
+   the tile, which is a link to the video's own page. */
+.vcard .vthumb iframe { pointer-events: none; }
+.video-frame iframe { pointer-events: auto; }

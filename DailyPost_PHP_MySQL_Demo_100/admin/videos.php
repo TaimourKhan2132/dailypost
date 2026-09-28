@@ -130,12 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $order = (int) $pdo->query("SELECT COALESCE(MAX(sort_order), 0) FROM videos")->fetchColumn();
 
             $ins = $pdo->prepare(
-                "INSERT INTO videos (youtube_id, title, status, sort_order, created_at)
-                 VALUES (?, ?, 'published', ?, NOW())"
+                "INSERT INTO videos (youtube_id, slug, title, status, sort_order, created_at)
+                 VALUES (?, ?, ?, 'published', ?, NOW())"
             );
             // Only overwrite a stored title when a new one was found,
             // so re-pasting a link never blanks a title.
             $upd = $pdo->prepare("UPDATE videos SET title = COALESCE(?, title) WHERE youtube_id = ?");
+            // Fill in a slug for anything that still has none - a
+            // video added before migration 007, or one whose title
+            // has only just arrived.
+            $slugUpd = $pdo->prepare("UPDATE videos SET slug = ? WHERE id = ? AND (slug IS NULL OR slug = '')");
 
             $added = $updated = 0;
             $bad   = [];
@@ -159,9 +163,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (isset($existing[$vid])) {
                     $upd->execute([$title, $vid]);
+
+                    $row = $pdo->prepare("SELECT id, title, slug FROM videos WHERE youtube_id = ?");
+                    $row->execute([$vid]);
+                    if ($cur = $row->fetch()) {
+                        if (trim((string) $cur['slug']) === '') {
+                            $slugUpd->execute([
+                                unique_video_slug($pdo, (string) $cur['title'], $vid, (int) $cur['id']),
+                                $cur['id'],
+                            ]);
+                        }
+                    }
                     $updated++;
                 } else {
-                    $ins->execute([$vid, $title, ++$order]);
+                    $ins->execute([
+                        $vid,
+                        unique_video_slug($pdo, (string) $title, $vid),
+                        $title,
+                        ++$order,
+                    ]);
                     $added++;
                 }
             }
@@ -337,7 +357,8 @@ https://www.youtube.com/watch?v=..."></textarea>
                 <button class="btn-sm ghost" name="action" value="<?= $act ?>" type="submit"><?= $label ?></button>
               </form>
             <?php endforeach; ?>
-            <a class="btn-sm ghost" href="<?= e(youtube_watch($v['youtube_id'])) ?>" target="_blank" rel="noopener">Open</a>
+            <a class="btn-sm" href="video_edit.php?id=<?= (int) $v['id'] ?>">Edit text</a>
+            <a class="btn-sm ghost" href="../<?= e(video_path($v)) ?>" target="_blank" rel="noopener">View page</a>
             <form method="post" onsubmit="return confirm('Remove this video from the site?')">
               <?= csrf_field() ?>
               <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">

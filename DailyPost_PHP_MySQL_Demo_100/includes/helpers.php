@@ -425,3 +425,44 @@ function youtube_watch(string $id): string
 {
     return 'https://www.youtube.com/watch?v=' . rawurlencode($id);
 }
+
+
+// --- VIDEO ADDRESSES --------------------------------------------
+// Same shape as the story helpers: a path relative to the site
+// root, a ready-made href, and a slug generator that will not
+// collide.
+
+function video_path(array $video): string
+{
+    if (!empty($video['slug'])) {
+        return 'watch/' . rawurlencode($video['slug']);
+    }
+
+    return 'video.php?id=' . (int) ($video['id'] ?? 0);
+}
+
+function video_url(array $video): string
+{
+    return base_path() . video_path($video);
+}
+
+// Falls back to the YouTube id when a video has no title, so there
+// is always something addressable.
+function unique_video_slug(PDO $pdo, string $title, string $youtubeId, ?int $excludeId = null): string
+{
+    $base = make_slug($title !== '' ? $title : 'video-' . $youtubeId);
+    $slug = $base;
+    $n    = 1;
+
+    while (true) {
+        $sql = "SELECT id FROM videos WHERE slug = ?" . ($excludeId ? " AND id <> ?" : "") . " LIMIT 1";
+        $q   = $pdo->prepare($sql);
+        $q->execute($excludeId ? [$slug, $excludeId] : [$slug]);
+
+        if (!$q->fetch()) {
+            return $slug;
+        }
+
+        $slug = $base . '-' . (++$n);
+    }
+}
