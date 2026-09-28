@@ -355,3 +355,73 @@ function category_image(array $categories, string $slug): string
 
     return $cat['images'][0] ?? $cat['default_image'] ?? '';
 }
+
+
+// --- YOUTUBE ----------------------------------------------------
+// Videos are not hosted here. Only the YouTube id is stored, and
+// YouTube serves both the thumbnail and the player.
+
+// Accepts anything an editor is likely to paste: a full watch link,
+// a youtu.be short link, a /shorts/ or /embed/ link, a link with
+// tracking parameters on the end, or a bare id. Returns null for
+// anything that is not recognisably a YouTube video.
+function youtube_id(string $input): ?string
+{
+    $input = trim($input);
+    if ($input === '') {
+        return null;
+    }
+
+    // Already a bare id.
+    if (preg_match('~^[A-Za-z0-9_-]{11}$~', $input)) {
+        return $input;
+    }
+
+    if (!preg_match('~^https?://~i', $input)) {
+        $input = 'https://' . $input;
+    }
+
+    $parts = parse_url($input);
+    if (!$parts || empty($parts['host'])) {
+        return null;
+    }
+
+    $host = preg_replace('~^(www|m|music)\.~', '', strtolower($parts['host']));
+    $path = $parts['path'] ?? '';
+    $id   = '';
+
+    if ($host === 'youtu.be') {
+        $id = ltrim($path, '/');
+    } elseif ($host === 'youtube.com' || $host === 'youtube-nocookie.com') {
+        if (preg_match('~^/(?:shorts|embed|v|live)/([^/?#]+)~', $path, $m)) {
+            $id = $m[1];
+        } else {
+            parse_str($parts['query'] ?? '', $query);
+            $id = $query['v'] ?? '';
+        }
+    } else {
+        return null;
+    }
+
+    return preg_match('~^[A-Za-z0-9_-]{11}$~', $id) ? $id : null;
+}
+
+// maxresdefault does not exist for every video, so the front end
+// falls back to hqdefault, which always does.
+function youtube_thumb(string $id, string $size = 'maxresdefault'): string
+{
+    return 'https://i.ytimg.com/vi/' . rawurlencode($id) . '/' . $size . '.jpg';
+}
+
+// nocookie so YouTube does not set tracking cookies on visitors who
+// never press play, and the iframe is only ever inserted on a click.
+function youtube_embed(string $id): string
+{
+    return 'https://www.youtube-nocookie.com/embed/' . rawurlencode($id)
+         . '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+}
+
+function youtube_watch(string $id): string
+{
+    return 'https://www.youtube.com/watch?v=' . rawurlencode($id);
+}

@@ -813,3 +813,142 @@ a   { color: inherit; text-decoration: none; }
   .btn { padding: 9px 15px; font-size: 13.5px; }
   .topbar .wrap { font-size: 12px; }
 }
+
+
+/* --- SLIDING ROWS ------------------------------------------------------
+   Used by Latest Stories and by Watch. --per is how many items are
+   visible; the JS reads it back so the breakpoints are defined here
+   only, not duplicated in script. */
+
+.slider {
+  position: relative;
+  --per: 5;
+  --gap: 18px;
+}
+.slider-viewport {
+  overflow: hidden;
+  /* Room for the cards to lift on hover without being clipped. */
+  padding: 5px 0 10px;
+  margin: -5px 0 -10px;
+}
+.slider-track {
+  display: flex;
+  gap: var(--gap);
+  transition: transform .5s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+.slider-track > * {
+  flex: 0 0 calc((100% - (var(--gap) * (var(--per) - 1))) / var(--per));
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slider-track { transition: none; }
+}
+
+.slider-nav {
+  position: absolute;
+  top: 86px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  z-index: 3;
+}
+.slider-nav:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.slider-nav.prev { left: -14px; }
+.slider-nav.next { right: -14px; }
+
+.slider-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding-top: 14px;
+}
+.slider-dots button {
+  width: 22px;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+}
+.slider-dots button.on { background: var(--accent); }
+
+
+/* --- VIDEO CARDS -------------------------------------------------------
+   A thumbnail and a play button. The YouTube iframe replaces the
+   thumbnail only when the button is pressed. */
+
+.vcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .18s, box-shadow .18s;
+}
+.vcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.vcard.playing:hover { transform: none; }
+
+.vthumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+  /* Same reason as the story cards: a flex item's default minimum
+     size is its content, which would otherwise beat aspect-ratio. */
+  flex: 0 0 auto;
+  min-height: 0;
+}
+.vthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vthumb iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+.vplay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 68px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.vplay svg { width: 68px; height: 48px; }
+.vplay .bg { fill: #212121; opacity: .8; transition: fill .15s, opacity .15s; }
+.vcard:hover .vplay .bg,
+.vplay:focus-visible .bg { fill: #f00; opacity: 1; }
+
+.vmeta { padding: 12px 14px 15px; }
+.vmeta h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+}
+
+@media (max-width: 1180px) { .slider { --per: 3; } }
+@media (max-width: 860px)  { .slider { --per: 2; } .slider-nav { top: 62px; } }
+@media (max-width: 520px)  {
+  .slider { --per: 1; }
+  .slider-nav.prev { left: 2px; }
+  .slider-nav.next { right: 2px; }
+}
+
+/* Sections whose content is a slider need their own bottom space;
+   the old .card-row supplied it and the slider does not. */
+#watch { padding-bottom: 38px; }

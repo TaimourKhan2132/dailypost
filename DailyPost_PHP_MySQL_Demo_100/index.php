@@ -30,6 +30,18 @@ $picks = $pdo->query(
      ORDER BY published_at DESC LIMIT 4"
 )->fetchAll();
 
+// Videos for the Watch slideshow. Wrapped because the table only
+// exists once migration 006 has been imported - a missing table
+// should mean no Watch section, not a broken homepage.
+$videos = [];
+try {
+    $videos = $pdo->query(
+        "SELECT * FROM videos WHERE status = 'published' ORDER BY sort_order, id LIMIT 30"
+    )->fetchAll();
+} catch (PDOException $e) {
+    // migration 006 not applied yet
+}
+
 // Latest, with paging.
 $page    = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 10;
@@ -180,27 +192,36 @@ require 'includes/header.php';
       <a class="more" href="search.php">View All</a>
     </div>
 
-    <div class="card-row">
-      <?php foreach (array_slice($latest, 0, 10) as $s):
-        $cat = $categories[$s['category']] ?? $categories['general']; ?>
-        <a class="card" href="<?= e(story_url($s)) ?>">
-          <div class="pic">
-            <span class="badge" style="background:<?= e($cat['badge_color']) ?>"><?= e($cat['name']) ?></span>
-            <img src="<?= e(story_image($s, $categories)) ?>" alt=""
-                 loading="lazy" onerror="this.src='<?= e($cat['default_image']) ?>'">
-          </div>
-          <div class="body">
-            <h3><?= e(mb_strimwidth($s['title'], 0, 64, '…')) ?></h3>
-            <div class="meta">
-              <div class="line">
-                <span><?= e($s['author']) ?></span>
-                <span><?= $s['published_at'] ? date('M j, Y', strtotime($s['published_at'])) : '' ?></span>
+    <?php // A sliding row rather than a static grid. The cards are
+          // unchanged - only the container moves. ?>
+    <div class="slider" data-slider data-interval="8000">
+      <div class="slider-viewport">
+        <div class="slider-track">
+          <?php foreach (array_slice($latest, 0, 10) as $s):
+            $cat = $categories[$s['category']] ?? $categories['general']; ?>
+            <a class="card" href="<?= e(story_url($s)) ?>">
+              <div class="pic">
+                <span class="badge" style="background:<?= e($cat['badge_color']) ?>"><?= e($cat['name']) ?></span>
+                <img src="<?= e(story_image($s, $categories)) ?>" alt=""
+                     loading="lazy" onerror="this.src='<?= e($cat['default_image']) ?>'">
               </div>
-              <div class="line"><span><?= read_time($s['body']) ?> min read</span></div>
-            </div>
-          </div>
-        </a>
-      <?php endforeach; ?>
+              <div class="body">
+                <h3><?= e(mb_strimwidth($s['title'], 0, 64, '…')) ?></h3>
+                <div class="meta">
+                  <div class="line">
+                    <span><?= e($s['author']) ?></span>
+                    <span><?= $s['published_at'] ? date('M j, Y', strtotime($s['published_at'])) : '' ?></span>
+                  </div>
+                  <div class="line"><span><?= read_time($s['body']) ?> min read</span></div>
+                </div>
+              </div>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <button class="slider-nav prev" type="button" aria-label="Previous stories">‹</button>
+      <button class="slider-nav next" type="button" aria-label="Next stories">›</button>
+      <div class="slider-dots" aria-hidden="true"></div>
     </div>
 
     <?php if ($pages > 1): ?>
@@ -211,6 +232,50 @@ require 'includes/header.php';
       </div>
     <?php endif; ?>
   </section>
+
+  <!-- ---------- WATCH ---------- -->
+  <?php // Nothing is rendered at all when there are no videos, so
+        // the section simply does not exist until Sheraz adds some. ?>
+  <?php if ($videos): ?>
+    <section id="watch">
+      <div class="sec-head">
+        <h2><span class="dot"></span> Watch</h2>
+        <span style="font-size:13.5px;color:var(--text-muted)"><?= count($videos) ?> video<?= count($videos) === 1 ? '' : 's' ?></span>
+      </div>
+
+      <div class="slider" data-slider data-interval="9000">
+        <div class="slider-viewport">
+          <div class="slider-track">
+            <?php foreach ($videos as $v): ?>
+              <article class="vcard" data-yt="<?= e($v['youtube_id']) ?>">
+                <div class="vthumb">
+                  <?php // Only a picture until someone presses play.
+                        // The YouTube player is never loaded otherwise,
+                        // which is what keeps this free to host. ?>
+                  <img src="<?= e(youtube_thumb($v['youtube_id'])) ?>" alt="" loading="lazy"
+                       data-fallback="<?= e(youtube_thumb($v['youtube_id'], 'hqdefault')) ?>"
+                       onerror="this.onerror=null;this.src=this.dataset.fallback">
+                  <button class="vplay" type="button"
+                          aria-label="Play<?= $v['title'] ? ': ' . e($v['title']) : '' ?>">
+                    <svg viewBox="0 0 68 48" aria-hidden="true">
+                      <path class="bg" d="M66.5 7.7a8.6 8.6 0 0 0-6-6C55.2 0 34 0 34 0S12.8 0 7.5 1.6a8.6 8.6 0 0 0-6 6.1A90 90 0 0 0 0 24a90 90 0 0 0 1.5 16.3 8.6 8.6 0 0 0 6 6C12.8 48 34 48 34 48s21.2 0 26.5-1.6a8.6 8.6 0 0 0 6-6.1A90 90 0 0 0 68 24a90 90 0 0 0-1.5-16.3z"/>
+                      <path d="M45 24 27 14v20z" fill="#fff"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="vmeta">
+                  <h3><?= e($v['title'] ?: 'Watch on DailyPost') ?></h3>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <button class="slider-nav prev" type="button" aria-label="Previous videos">‹</button>
+        <button class="slider-nav next" type="button" aria-label="Next videos">›</button>
+        <div class="slider-dots" aria-hidden="true"></div>
+      </div>
+    </section>
+  <?php endif; ?>
 
   <!-- ---------- EDITOR'S PICKS ---------- -->
   <?php if ($picks): ?>
@@ -278,6 +343,144 @@ require 'includes/header.php';
 
   start();
 })();
+
+// --- SLIDING ROWS ----------------------------------------------
+// Drives both the Latest Stories row and the Watch row. The cards
+// themselves are ordinary cards; only the track moves.
+document.querySelectorAll('[data-slider]').forEach(function (slider) {
+  var track = slider.querySelector('.slider-track');
+  var items = Array.prototype.slice.call(track.children);
+  var dots  = slider.querySelector('.slider-dots');
+  var prev  = slider.querySelector('.slider-nav.prev');
+  var next  = slider.querySelector('.slider-nav.next');
+  if (!items.length) return;
+
+  var at = 0, timer = null, stopped = false;
+
+  // How many fit at this width. Read from CSS so the breakpoints
+  // live in one place rather than being duplicated here.
+  function perView() {
+    var v = parseInt(getComputedStyle(track).getPropertyValue('--per'), 10);
+    return v > 0 ? v : 1;
+  }
+  function maxIndex() { return Math.max(0, items.length - perView()); }
+
+  function render() {
+    at = Math.min(at, maxIndex());
+    // Offset from the item's own position, so the gap between cards
+    // never has to be recalculated here.
+    track.style.transform = 'translateX(' + (-items[at].offsetLeft) + 'px)';
+
+    var hideNav = items.length <= perView();
+    if (prev) prev.hidden = hideNav;
+    if (next) next.hidden = hideNav;
+
+    if (dots) {
+      if (dots.children.length !== maxIndex() + 1) {
+        dots.innerHTML = '';
+        for (var i = 0; i <= maxIndex(); i++) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.setAttribute('aria-label', 'Go to position ' + (i + 1));
+          (function (n) { b.onclick = function () { go(n); rest(); }; })(i);
+          dots.appendChild(b);
+        }
+      }
+      Array.prototype.forEach.call(dots.children, function (d, i) {
+        d.classList.toggle('on', i === at);
+      });
+      dots.hidden = hideNav;
+    }
+  }
+
+  function go(n) {
+    var max = maxIndex();
+    at = n < 0 ? max : (n > max ? 0 : n);
+    render();
+  }
+
+  function play() {
+    if (stopped) return;
+    // Someone who has asked their system to reduce motion should not
+    // get a row that moves on its own.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (items.length <= perView()) return;
+    rest();
+    timer = setInterval(function () { go(at + 1); }, parseInt(slider.dataset.interval, 10) || 8000);
+  }
+  function rest() { clearInterval(timer); timer = null; }
+  function stop() { stopped = true; rest(); }
+
+  if (prev) prev.onclick = function () { go(at - 1); rest(); play(); };
+  if (next) next.onclick = function () { go(at + 1); rest(); play(); };
+
+  slider.addEventListener('mouseenter', rest);
+  slider.addEventListener('mouseleave', play);
+  slider.addEventListener('focusin', rest);
+  slider.addEventListener('touchstart', rest, { passive: true });
+
+  // Swipe on a phone.
+  var x0 = null;
+  slider.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  slider.addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 40) go(dx < 0 ? at + 1 : at - 1);
+    x0 = null;
+    play();
+  });
+
+  // Once a video is playing, stop moving the row out from under it.
+  slider.addEventListener('dp:playing', stop);
+
+  window.addEventListener('resize', render);
+  render();
+  play();
+});
+
+// --- THUMBNAIL QUALITY ------------------------------------------
+// Not every video has a maxresdefault image. When it is missing
+// YouTube does not return 404 - it returns a small grey placeholder
+// with status 200, so an onerror handler never fires. The only
+// reliable tell is how big the image turned out to be.
+document.querySelectorAll('.vthumb img[data-fallback]').forEach(function (img) {
+  var check = function () {
+    if (img.naturalWidth && img.naturalWidth <= 150 && img.dataset.fallback) {
+      img.src = img.dataset.fallback;
+      img.removeAttribute('data-fallback');
+    }
+  };
+  if (img.complete) { check(); } else { img.addEventListener('load', check); }
+});
+
+// --- CLICK TO PLAY ----------------------------------------------
+// The iframe is created only on a click. Until then the page holds
+// nothing but an image, so no YouTube code runs and no cookies are
+// set for visitors who never press play.
+document.querySelectorAll('.vcard').forEach(function (card) {
+  var btn = card.querySelector('.vplay');
+  if (!btn) return;
+
+  btn.addEventListener('click', function () {
+    var id = card.dataset.yt;
+    if (!id) return;
+
+    var frame = document.createElement('iframe');
+    frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id)
+              + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    frame.title = card.querySelector('h3') ? card.querySelector('h3').textContent : 'Video';
+    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    frame.setAttribute('allowfullscreen', '');
+    frame.setAttribute('frameborder', '0');
+
+    var holder = card.querySelector('.vthumb');
+    holder.innerHTML = '';
+    holder.appendChild(frame);
+    card.classList.add('playing');
+
+    card.dispatchEvent(new CustomEvent('dp:playing', { bubbles: true }));
+  });
+});
 </script>
 
 <?php require 'includes/footer.php'; ?>

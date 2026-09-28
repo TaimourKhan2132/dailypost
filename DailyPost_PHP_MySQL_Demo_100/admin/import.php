@@ -119,6 +119,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pub = $r['published_at'] ?? '';
                     if ($pub !== '' && strtotime($pub) === false) { $pub = ''; }
 
+                    // Read counts. A blank cell means "leave it as it
+                    // is" rather than zero - clearing the column by
+                    // accident must never wipe a story's reads.
+                    // Commas are tolerated because Excel writes 12,345.
+                    $viewsRaw = trim((string) ($r['views'] ?? ''));
+                    $views    = null;
+
+                    if ($viewsRaw !== '') {
+                        $clean = str_replace([',', ' '], '', $viewsRaw);
+                        if (!preg_match('/^\d+$/', $clean)) {
+                            $errors[] = "Row $line: reads must be a whole number, or blank to leave it unchanged.";
+                        } else {
+                            $views = min(100000000, (int) $clean);
+                        }
+                    }
+
                     $rows[] = [
                         'id'           => ctype_digit($r['id'] ?? '') ? (int) $r['id'] : null,
                         'title'        => $title,
@@ -129,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'image_url'    => $img !== '' ? $img : null,
                         'status'       => $st,
                         'published_at' => $pub !== '' ? date('Y-m-d H:i:s', strtotime($pub)) : null,
+                        'views'        => $views,
                     ];
 
                     // Stop runaway files rather than time out
@@ -177,11 +194,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $ins = $pdo->prepare(
-                        "INSERT INTO stories (title, slug, author, category, excerpt, body, image_url, status, created_at, published_at)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)"
+                        "INSERT INTO stories (title, slug, author, category, excerpt, body, image_url, status, created_at, published_at, views)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)"
                     );
+                    // COALESCE is what makes a blank views cell mean
+                    // "keep what is already there".
                     $upd = $pdo->prepare(
-                        "UPDATE stories SET title=?, author=?, category=?, excerpt=?, body=?, image_url=?, status=?, published_at=?
+                        "UPDATE stories SET title=?, author=?, category=?, excerpt=?, body=?, image_url=?, status=?, published_at=?,
+                                            views = COALESCE(?, views)
                          WHERE id=?"
                     );
 
@@ -207,7 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // so everything is an insert.
                         if ($r['id'] && isset($existing[$r['id']])) {
                             $upd->execute([$r['title'], $r['author'], $r['category'], $r['excerpt'],
-                                           $r['body'], $r['image_url'], $r['status'], $pub, $r['id']]);
+                                           $r['body'], $r['image_url'], $r['status'], $pub,
+                                           $r['views'], $r['id']]);
                             $updated++;
                         } else {
                             $base = make_slug($r['title']);
@@ -218,8 +239,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                             $usedSlugs[$slug] = true;
 
+                            // A new story with no views given starts at
+                            // zero rather than NULL.
                             $ins->execute([$r['title'], $slug, $r['author'], $r['category'], $r['excerpt'],
-                                           $r['body'], $r['image_url'], $r['status'], $pub]);
+                                           $r['body'], $r['image_url'], $r['status'], $pub,
+                                           $r['views'] ?? 0]);
                             $added++;
                         }
                     }
@@ -361,6 +385,7 @@ body{background:var(--bg)}
     <h2 style="font-size:18px;font-weight:700;margin:0 0 10px">Good to know</h2>
     <ul style="margin:0;padding-left:18px;color:var(--text-muted);font-size:14.5px;line-height:1.7">
       <li><b>Nothing is saved unless every row is valid.</b> If anything is wrong you get a list of which rows, and the site is left untouched.</li>
+      <li>The <b>views</b> column holds each story's read count. Exports include it, and imports restore it. Leave a cell <b>blank to keep the current count</b> — only a number changes it.</li>
       <li>Categories that are not recognised become <b>general</b>. Bad image links are ignored and the category photo is used instead.</li>
       <li>Up to <b>5,000 rows</b> per file. For more than that, split it and import twice.</li>
       <li>Export first before a big change — that file is your undo.</li>

@@ -24,8 +24,10 @@ if (!in_array($status, ['published', 'pending', 'rejected', 'all'], true)) {
     $status = 'published';
 }
 
+// views travels with the story, so a spreadsheet is a complete
+// picture and re-importing it restores the read counts too.
 $columns = ['id', 'title', 'author', 'category', 'excerpt', 'body',
-            'image_url', 'status', 'published_at'];
+            'image_url', 'status', 'published_at', 'views'];
 
 $filename = $template
     ? 'dailypost-template.csv'
@@ -55,6 +57,7 @@ if ($template) {
         '',
         'published',
         '',
+        'Leave blank to keep the current reads',
     ]);
     exit;
 }

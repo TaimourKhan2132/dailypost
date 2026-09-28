@@ -168,6 +168,7 @@ main.wrap{padding-top:24px}
   <span style="color:var(--text-muted);font-size:14px">Admin</span>
   <span class="who">Signed in as <b style="color:var(--text)"><?= e($_SESSION['admin']) ?></b></span>
   <a class="btn" href="import.php">Import / export stories</a>
+  <a class="btn ghost" href="videos.php">Videos</a>
   <a class="btn ghost" href="export.php?status=published">Download as text</a>
   <a class="btn ghost" href="../index.php">View site</a>
   <a class="btn ghost" href="logout.php">Logout</a>
