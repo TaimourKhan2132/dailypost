@@ -23,30 +23,74 @@ $errors = [];
 $validCategories = $pdo->query("SELECT slug FROM categories")->fetchAll(PDO::FETCH_COLUMN);
 $validStatuses   = ['published', 'pending', 'rejected'];
 
+// --- DOWNLOAD A SNAPSHOT ----------------------------------------
+// Handled before anything else because it sends a file, not a page.
+if (($_GET['download'] ?? '') !== '') {
+    $want = basename($_GET['download']);           // no directory traversal
+    $path = backups_dir() . '/' . $want;
+
+    if (preg_match('/^stories-[0-9\-]+[a-z0-9\-]*\.csv$/i', $want) && is_file($path)) {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $want . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
+    header('Location: import.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
+
+    $action = $_POST['action'] ?? 'import';
 
     $mode = $_POST['mode'] ?? 'update';
     if (!in_array($mode, ['update', 'replace'], true)) {
         $mode = 'update';
     }
 
-    // --- The upload itself -------------------------------------
-    if (!isset($_FILES['csv']) || $_FILES['csv']['error'] !== UPLOAD_ERR_OK) {
-        $errors[] = match ($_FILES['csv']['error'] ?? UPLOAD_ERR_NO_FILE) {
-            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
-                'That file is too large for the server to accept. Split it into two smaller files and import them one after the other.',
-            UPLOAD_ERR_NO_FILE => 'Please choose a file first.',
-            UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please try again.',
-            default => 'The upload failed. Please try again.',
-        };
+    // Where the rows are coming from: an upload, or a snapshot
+    // already on the server being restored.
+    $sourcePath  = null;
+    $restoreFile = null;
+
+    if ($action === 'restore') {
+        $restoreFile = basename($_POST['file'] ?? '');
+        $candidate   = backups_dir() . '/' . $restoreFile;
+
+        if (!preg_match('/^stories-[0-9\-]+[a-z0-9\-]*\.csv$/i', $restoreFile) || !is_file($candidate)) {
+            $errors[] = 'That backup could not be found.';
+        } else {
+            $sourcePath = $candidate;
+            $mode       = 'replace';      // a restore always replaces
+        }
+    } else {
+        // --- The upload itself ---------------------------------
+        if (!isset($_FILES['csv']) || $_FILES['csv']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = match ($_FILES['csv']['error'] ?? UPLOAD_ERR_NO_FILE) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+                    'That file is too large for the server to accept. Split it into two smaller files and import them one after the other.',
+                UPLOAD_ERR_NO_FILE => 'Please choose a file first.',
+                UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please try again.',
+                default => 'The upload failed. Please try again.',
+            };
+        } else {
+            // Read straight from the temporary upload. The file is
+            // never saved into the website folder, so there is
+            // nothing for anyone to request later.
+            $sourcePath = $_FILES['csv']['tmp_name'];
+        }
+    }
+
+    // Deleting every story should take more than one careless click.
+    if (!$errors && $mode === 'replace' && strtoupper(trim($_POST['confirm'] ?? '')) !== 'REPLACE') {
+        $errors[] = 'To replace everything, type REPLACE in the confirmation box. Nothing has been changed.';
     }
 
     if (!$errors) {
-        // Read straight from the temporary upload. The file is
-        // never saved into the website folder, so there is nothing
-        // for anyone to request later.
-        $fh = fopen($_FILES['csv']['tmp_name'], 'r');
+        $fh = fopen($sourcePath, 'r');
 
         if (!$fh) {
             $errors[] = 'The file could not be read.';
@@ -167,7 +211,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$errors) {
                 $added = $updated = 0;
 
+                // Take a snapshot before deleting anything. This is
+                // the whole safety net: a replace that turns out to
+                // be wrong can be undone from the list below.
+                $snapshot = null;
+                if ($mode === 'replace') {
+                    $snapshot = write_story_snapshot($pdo, $action === 'restore' ? 'before-restore' : 'before-replace');
+
+                    if (!$snapshot['ok']) {
+                        $errors[] = 'A backup could not be written, so nothing was deleted. '
+                                  . 'Check that the backups folder exists and is writable.';
+                    }
+                }
+
                 try {
+                    if ($errors) {
+                        throw new RuntimeException('backup failed');
+                    }
+
                     $pdo->beginTransaction();
 
                     if ($mode === 'replace') {
@@ -250,12 +311,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $pdo->commit();
 
-                    $report = ['added' => $added, 'updated' => $updated, 'mode' => $mode];
+                    prune_story_snapshots();
+
+                    $report = [
+                        'added'    => $added,
+                        'updated'  => $updated,
+                        'mode'     => $mode,
+                        'restored' => $action === 'restore' ? $restoreFile : null,
+                        'snapshot' => $snapshot,
+                    ];
 
                 } catch (Throwable $e) {
-                    $pdo->rollBack();
-                    error_log('CSV import failed: ' . $e->getMessage());
-                    $errors[] = 'Something went wrong while saving, so nothing was changed. Your stories are exactly as they were.';
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    if ($e->getMessage() !== 'backup failed') {
+                        error_log('CSV import failed: ' . $e->getMessage());
+                        $errors[] = 'Something went wrong while saving, so nothing was changed. Your stories are exactly as they were.';
+                    }
                 }
             }
         }
@@ -306,9 +379,17 @@ body{background:var(--bg)}
       <b>Done.</b>
       <?= $report['added'] ?> <?= $report['added'] === 1 ? 'story' : 'stories' ?> added<?php
         if ($report['updated']) echo ', ' . $report['updated'] . ' updated';
-        if ($report['mode'] === 'replace') echo '. Everything that was there before was removed.';
+        if ($report['restored']) echo ', restored from ' . e($report['restored']);
+        elseif ($report['mode'] === 'replace') echo '. Everything that was there before was removed.';
         else echo '.';
       ?>
+      <?php if (!empty($report['snapshot']['ok'])): ?>
+        <div style="margin-top:6px;font-size:13.5px">
+          A backup of the previous <?= number_format($report['snapshot']['rows']) ?>
+          <?= $report['snapshot']['rows'] === 1 ? 'story' : 'stories' ?> was saved first
+          — see Backups below if you need to undo this.
+        </div>
+      <?php endif; ?>
       <a href="../index.php" style="color:inherit;text-decoration:underline">View the site</a>
     </div>
   <?php endif; ?>
@@ -353,8 +434,18 @@ body{background:var(--bg)}
     <h2 style="font-size:18px;font-weight:700;margin:0 0 14px">Upload</h2>
 
     <form method="post" enctype="multipart/form-data"
-          onsubmit="return !document.getElementById('rep').checked || confirm('This will permanently delete all <?= $total ?> stories currently on the site and replace them with the file. Continue?')">
+          onsubmit="return !document.getElementById('rep').checked || confirm('This will permanently delete all <?= $total ?> stories currently on the site and replace them with the file. A backup is saved first. Continue?')">
       <?= csrf_field() ?>
+      <input type="hidden" name="action" value="import">
+
+      <script>
+      // The confirmation box only appears for the destructive option.
+      document.addEventListener('change', function (e) {
+        if (e.target.name !== 'mode') return;
+        var box = document.getElementById('confirmBox');
+        if (box) box.hidden = document.getElementById('rep').checked === false;
+      });
+      </script>
 
       <div class="field">
         <label for="csv">Spreadsheet file (.csv)</label>
@@ -373,12 +464,57 @@ body{background:var(--bg)}
         <label style="font-weight:400;display:flex;gap:9px;align-items:flex-start">
           <input id="rep" type="radio" name="mode" value="replace" style="width:auto;margin-top:3px">
           <span><b>Replace everything</b><br>
-          <span style="color:var(--text-muted);font-size:13.5px">Deletes all <?= number_format($total) ?> current stories first, then imports the file. Use this to clear out the demo content.</span></span>
+          <span style="color:var(--text-muted);font-size:13.5px">Deletes all <?= number_format($total) ?> current stories first, then imports the file.</span></span>
         </label>
+      </div>
+
+      <div class="field" id="confirmBox" hidden style="border-left:3px solid var(--accent);padding-left:14px">
+        <label for="confirm">Type <b>REPLACE</b> to confirm</label>
+        <input id="confirm" name="confirm" autocomplete="off" placeholder="REPLACE">
+        <span class="hint">
+          All <?= number_format($total) ?> stories will be deleted. A backup is saved
+          first and listed below, so this can be undone.
+        </span>
       </div>
 
       <button class="btn" type="submit">Import stories</button>
     </form>
+  </div>
+
+  <?php $snapshots = list_story_snapshots(); ?>
+  <div class="panel-box">
+    <h2 style="font-size:18px;font-weight:700;margin:0 0 6px">Backups</h2>
+    <p style="color:var(--text-muted);font-size:14px;margin:0 0 14px">
+      A copy of every story is saved automatically just before anything is replaced.
+      Restoring one puts the site back exactly as it was at that moment.
+    </p>
+
+    <?php if (!$snapshots): ?>
+      <p style="color:var(--text-muted);font-size:14px;margin:0">
+        No backups yet. One will be written the first time you replace everything.
+      </p>
+    <?php else: ?>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <?php foreach ($snapshots as $s): ?>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:9px 0"><?= date('j M Y, g:ia', $s['time']) ?></td>
+            <td style="padding:9px 10px;color:var(--text-muted)"><?= number_format($s['bytes'] / 1024, 0) ?> KB</td>
+            <td style="padding:9px 0;text-align:right;white-space:nowrap">
+              <a class="btn-sm ghost" style="text-decoration:none"
+                 href="?download=<?= urlencode($s['file']) ?>">Download</a>
+              <form method="post" style="display:inline"
+                    onsubmit="return confirm('Put the site back to how it was on <?= date('j M Y, g:ia', $s['time']) ?>? Everything currently on the site will be replaced.')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action"  value="restore">
+                <input type="hidden" name="file"    value="<?= e($s['file']) ?>">
+                <input type="hidden" name="confirm" value="REPLACE">
+                <button class="btn-sm" type="submit">Restore</button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </table>
+    <?php endif; ?>
   </div>
 
   <div class="panel-box">

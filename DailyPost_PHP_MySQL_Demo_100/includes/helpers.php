@@ -466,3 +466,109 @@ function unique_video_slug(PDO $pdo, string $title, string $youtubeId, ?int $exc
         $slug = $base . '-' . (++$n);
     }
 }
+
+
+// --- STORY SNAPSHOTS --------------------------------------------
+// Written immediately before anything destructive, so a mistaken
+// "replace everything" can be undone. Kept outside the web root's
+// reach by backups/.htaccess.
+
+function backups_dir(): string
+{
+    return __DIR__ . '/../backups';
+}
+
+// The columns a snapshot carries - the same set the CSV import
+// understands, so a snapshot can be fed straight back in.
+function snapshot_columns(): array
+{
+    return ['id', 'title', 'author', 'category', 'excerpt', 'body',
+            'image_url', 'status', 'published_at', 'views'];
+}
+
+// Streams every story to a CSV file in chunks. Chunked on purpose:
+// this table has held well over a hundred thousand rows, and
+// loading that into memory on shared hosting would fail exactly
+// when the backup matters most.
+function write_story_snapshot(PDO $pdo, ?string $label = null): array
+{
+    $dir = backups_dir();
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+
+    $name = 'stories-' . date('Y-m-d-His') . ($label ? '-' . preg_replace('/[^a-z0-9]+/i', '-', $label) : '') . '.csv';
+    $path = $dir . '/' . $name;
+
+    $fh = @fopen($path, 'w');
+    if (!$fh) {
+        return ['ok' => false, 'error' => 'Could not write to the backups folder.', 'rows' => 0];
+    }
+
+    $cols = snapshot_columns();
+
+    // Excel needs the byte order mark to read this as UTF-8.
+    fwrite($fh, "\xEF\xBB\xBF");
+    fputcsv($fh, $cols);
+
+    $rows   = 0;
+    $chunk  = 2000;
+    $offset = 0;
+    $list   = implode(',', $cols);
+
+    while (true) {
+        $q = $pdo->prepare("SELECT $list FROM stories ORDER BY id LIMIT :lim OFFSET :off");
+        $q->bindValue('lim', $chunk,  PDO::PARAM_INT);
+        $q->bindValue('off', $offset, PDO::PARAM_INT);
+        $q->execute();
+
+        $batch = $q->fetchAll();
+        if (!$batch) {
+            break;
+        }
+
+        foreach ($batch as $r) {
+            fputcsv($fh, $r);
+            $rows++;
+        }
+
+        $offset += $chunk;
+    }
+
+    fclose($fh);
+
+    return ['ok' => true, 'file' => $name, 'path' => $path, 'rows' => $rows,
+            'bytes' => (int) @filesize($path)];
+}
+
+// Newest first.
+function list_story_snapshots(): array
+{
+    $dir = backups_dir();
+    if (!is_dir($dir)) {
+        return [];
+    }
+
+    $out = [];
+    foreach (glob($dir . '/stories-*.csv') ?: [] as $p) {
+        $out[] = [
+            'file'  => basename($p),
+            'bytes' => (int) filesize($p),
+            'time'  => (int) filemtime($p),
+        ];
+    }
+
+    usort($out, fn($a, $b) => $b['time'] <=> $a['time']);
+
+    return $out;
+}
+
+// Keeps disk use bounded without ever throwing away the most
+// recent few.
+function prune_story_snapshots(int $keep = 6): void
+{
+    $all = list_story_snapshots();
+    foreach (array_slice($all, $keep) as $old) {
+        @unlink(backups_dir() . '/' . $old['file']);
+    }
+}
