@@ -240,7 +240,6 @@ require 'includes/header.php';
     <section id="watch">
       <div class="sec-head">
         <h2><span class="dot"></span> Watch</h2>
-        <span style="font-size:13.5px;color:var(--text-muted)"><?= count($videos) ?> video<?= count($videos) === 1 ? '' : 's' ?></span>
       </div>
 
       <div class="slider" data-slider data-interval="3000">
