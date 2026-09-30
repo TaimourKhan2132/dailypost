@@ -19,6 +19,7 @@
         <h4>Explore</h4>
         <a href="<?= e(base_path()) ?>index.php">Latest Stories</a>
         <a href="<?= e(base_path()) ?>search.php">Search</a>
+        <a href="<?= e(base_path()) ?>watch">Watch</a>
         <a href="<?= e(base_path()) ?>index.php#picks">Editor's Picks</a>
       </div>
       <div>

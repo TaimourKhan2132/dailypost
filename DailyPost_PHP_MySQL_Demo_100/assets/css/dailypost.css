@@ -995,3 +995,13 @@ a   { color: inherit; text-decoration: none; }
    the tile, which is a link to the video's own page. */
 .vcard .vthumb iframe { pointer-events: none; }
 .video-frame iframe { pointer-events: auto; }
+
+/* --- ALL VIDEOS PAGE ---------------------------------------------------
+   A plain grid rather than a slider: this is the page you land on to
+   browse everything, so nothing should move or be hidden. */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 18px;
+  padding-bottom: 34px;
+}

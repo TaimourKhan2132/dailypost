@@ -240,6 +240,7 @@ require 'includes/header.php';
     <section id="watch">
       <div class="sec-head">
         <h2><span class="dot"></span> Watch</h2>
+        <a class="more" href="<?= e(base_path()) ?>watch">View All</a>
       </div>
 
       <div class="slider" data-slider data-interval="3000">

@@ -16,6 +16,7 @@ $pages = [
     ['loc' => site_url('index.php'),  'priority' => '1.0', 'freq' => 'daily'],
     ['loc' => site_url('search.php'), 'priority' => '0.5', 'freq' => 'weekly'],
     ['loc' => site_url('about.php'),  'priority' => '0.5', 'freq' => 'monthly'],
+    ['loc' => site_url('watch'),      'priority' => '0.6', 'freq' => 'weekly'],
     ['loc' => site_url('write.php'),  'priority' => '0.6', 'freq' => 'monthly'],
 ];
 

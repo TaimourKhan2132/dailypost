@@ -30,6 +30,11 @@ ErrorDocument 404 /404.php
     # The old story.php?id=42 still works and redirects here.
     RewriteRule ^story/([^/]+)/?$ story.php?slug=$1 [L,QSA]
 
+    # Every video in one list. Must come before the rule below, and
+    # cannot be caught by it anyway: that one needs a slug after the
+    # slash, and this has nothing.
+    RewriteRule ^watch/?$ watch.php [L,QSA]
+
     # Video pages, same idea:
     #   /watch/andrew-ng-...  ->  video.php?slug=...
     RewriteRule ^watch/([^/]+)/?$ video.php?slug=$1 [L,QSA]
